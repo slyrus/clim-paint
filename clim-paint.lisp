@@ -72,13 +72,14 @@
         (stream-cursor-position pane)
       (setf view-origin (make-point left top)))
     
-    (loop
-       :for previous-point = nil then point
-       :for point :in points
-       :do
-         (present point 'point-presentation)
-         (when previous-point
-           (present (make-line previous-point point) 'line-presentation)))))
+    (let ((points (car shapes)))
+      (loop
+         :for previous-point = nil then point
+         :for point :in points
+         :do
+           (present point 'point-presentation)
+           (when previous-point
+             (present (make-line previous-point point) 'line-presentation))))))
 
 (defun point+ (p1 p2)
   (multiple-value-bind (x1 y1)
