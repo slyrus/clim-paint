@@ -1,0 +1,11 @@
+;;;; clim-paint.asd
+
+(asdf:defsystem #:clim-paint
+  :description "A McCLIM Paiting Program"
+  :author "Cyrus Harmon <ch-lisp@bobobeach.com>"
+  :license  "BSD"
+  :version "0.0.1"
+  :depends-on (:mcclim)
+  :serial t
+  :components ((:file "package")
+               (:file "clim-paint")))
