@@ -2,7 +2,7 @@
 (in-package :clim-paint)
 
 (define-application-frame clim-paint ()
-  ((points :initform nil :accessor points)
+  ((shapes :initform (list nil) :accessor shapes)
    (ink :initform +blue+ :accessor ink)
    (view-origin :initform nil :accessor view-origin))
   (:menu-bar clim-paint-menubar)
@@ -62,7 +62,7 @@
 ;;
 ;; main display function
 (defun clim-paint-display (frame pane)
-  (with-accessors ((points points)
+  (with-accessors ((shapes shapes)
                    (ink ink)
                    (view-origin view-origin))
       frame
@@ -184,13 +184,14 @@ of pane."
     ((point point :prompt "point")
      (x real :prompt "X")
      (y real :prompt "Y"))
-  (with-accessors ((points points))
+  (with-accessors ((shapes shapes))
       *application-frame*
-    (when (and point x y)
-      (let ((tail (member point points)))
-        (when tail
-          (rplaca tail (make-point (max x 0)
-                                   (max y 0))))))))
+    (let ((points (car shapes)))
+      (when (and point x y)
+        (let ((tail (member point points)))
+          (when tail
+            (rplaca tail (make-point (max x 0)
+                                     (max y 0)))))))))
 
 (define-clim-paint-command (com-drag-move-point)
     ((presentation t))
@@ -232,14 +233,16 @@ of list. Returns the (destructively) modified list."
      (y real :prompt "Y")
      &key
      (previous-point point))
-  (with-accessors ((points points))
+  (with-accessors ((shapes shapes))
       *application-frame*
-    (when (and x y)
-      (let ((point (make-point (max x 0)
-                               (max y 0))))
-        (if previous-point
-            (insert-before point previous-point points)
-            (push point points))))))
+    (let ((points (car shapes)))
+      (when (and x y)
+        (let ((point (make-point (max x 0)
+                                 (max y 0))))
+          (if previous-point
+              (insert-before point previous-point points)
+              (push point points))))
+      (setf (car shapes) points))))
 
 (define-clim-paint-command (com-drag-add-point)
     ((old-point t))
@@ -280,14 +283,15 @@ of list. Returns the (destructively) modified list."
 
 (define-clim-paint-command (com-split-line)
     ((presentation t))
-  (with-accessors ((points points))
+  (with-accessors ((shapes shapes))
       *application-frame*
-    (let ((line (presentation-object presentation)))
-      (let ((i1 (position (line-start-point line) points :test 'point=))
-            (i2 (position (line-end-point line) points :test 'point=)))
-        (let ((index (min (or i1 (1- (length points)))
-                          (or i2 (1- (length points))))))
-          (com-drag-add-point (elt points (1+ index))))))))
+    (let ((points (car shapes)))
+      (let ((line (presentation-object presentation)))
+        (let ((i1 (position (line-start-point line) points :test 'point=))
+              (i2 (position (line-end-point line) points :test 'point=)))
+          (let ((index (min (or i1 (1- (length points)))
+                            (or i2 (1- (length points))))))
+            (com-drag-add-point (elt points (1+ index)))))))))
 
 (define-gesture-name click-line-gesture :pointer-button (:left :control))
 
