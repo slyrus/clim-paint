@@ -411,16 +411,70 @@ of list. Returns the (destructively) modified list."
     (let ((line (presentation-object presentation)))
       (com-drag-split-line line))))
 
-(define-gesture-name click-line-gesture :pointer-button (:left :control))
+(define-gesture-name split-line-gesture :pointer-button (:left :control))
 
-(define-presentation-to-command-translator click-line-translator
+(define-presentation-to-command-translator split-line-translator
     (line com-split-line clim-paint
-          :gesture click-line-gesture
+          :gesture split-line-gesture
           :menu nil
           :tester ((object)
                    t))
     (object presentation)
   (list presentation))
+
+
+(define-clim-paint-command (com-drag-move-line)
+    ((line line))
+  (multiple-value-bind (px py)
+      (point-position (view-origin *application-frame*))
+    (with-accessors ((ink ink)
+                     (shapes shapes))
+        *application-frame*
+      (let ((pane (get-frame-pane *application-frame* 'app)))
+        (multiple-value-bind (startx starty)
+            (stream-pointer-position pane)
+          (let ((p1 (line-start-point line))
+                  (p2 (line-end-point line)))
+            (with-accessors ((x1 point-x)
+                             (y1 point-y))
+                p1
+              (with-accessors ((x2 point-x)
+                               (y2 point-y))
+                  p2
+                (multiple-value-bind (x y)
+	            (dragging-output (pane :finish-on-release t)
+                      (multiple-value-bind (x y)
+                          (stream-pointer-position pane)
+                        (draw-line* pane
+                                    (+ x1 (- x startx) px)
+                                    (+ y1 (- y starty) py)
+                                    (+ x2 (- x startx) px)
+                                    (+ y2 (- y starty) py)
+                                    :line-thickness 4
+                                    :ink *highlight-color*)))
+	          (setf x1 (+ x1 (- x startx) px))
+                  (setf y1 (+ y1 (- y starty) py))
+                  (setf x2 (+ x2 (- x startx) px))
+                  (setf y2 (+ y2 (- y starty) py)))))))))))
+
+(define-clim-paint-command (com-move-line)
+    ((presentation t))
+  (with-accessors ((shapes shapes))
+      *application-frame*
+    (let ((line (presentation-object presentation)))
+      (com-drag-move-line line))))
+
+(define-gesture-name move-line-gesture :pointer-button (:left))
+
+(define-presentation-to-command-translator move-line-translator
+    (line com-move-line clim-paint
+          :gesture move-line-gesture
+          :menu nil
+          :tester ((object)
+                   t))
+    (object presentation)
+  (list presentation))
+
 
 (define-clim-paint-command (com-quit :name t :menu "Quit")
    ()
