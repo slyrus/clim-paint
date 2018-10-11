@@ -423,6 +423,31 @@ of list. Returns the (destructively) modified list."
   (list presentation))
 
 
+(defun find-lines-containing (point shapes)
+  (loop for shape in shapes
+     when (and (linep shape)
+               (or (eq point (line-start-point shape))
+                   (eq point (line-end-point shape))))
+     collect shape))
+
+;;
+;; dragging-output doesn't support the feedback arg. No reason it
+;; shouldn't so let's copy/paste McCLIM's version and add a feedback
+;; arg.
+(locally
+    (declare #+sbcl (sb-ext:muffle-conditions style-warning))
+  (defmacro dragging-output* ((&optional (stream *standard-output*) &rest args
+                                         &key (repaint t)
+                                         finish-on-release
+                                         multiple-window
+                                         feedback)
+                              &body body)
+    (declare (ignore repaint finish-on-release multiple-window feedback))
+    (let ((record (gensym "record")))
+      `(let ((,record (with-output-to-output-record (,stream)
+                        ,@body)))
+        (drag-output-record ,stream ,record :erase-final t ,@args)))))
+
 (define-clim-paint-command (com-drag-move-line)
     ((line line))
   (multiple-value-bind (px py)
@@ -434,24 +459,103 @@ of list. Returns the (destructively) modified list."
         (multiple-value-bind (startx starty)
             (stream-pointer-position pane)
           (let ((p1 (line-start-point line))
-                  (p2 (line-end-point line)))
-            (with-accessors ((x1 point-x)
-                             (y1 point-y))
-                p1
-              (with-accessors ((x2 point-x)
-                               (y2 point-y))
-                  p2
+                (p2 (line-end-point line)))
+            (with-accessors ((x1 point-x) (y1 point-y)) p1
+              (with-accessors ((x2 point-x) (y2 point-y)) p2
                 (multiple-value-bind (x y)
-	            (dragging-output (pane :finish-on-release t)
-                      (multiple-value-bind (x y)
-                          (stream-pointer-position pane)
-                        (draw-line* pane
-                                    (+ x1 (- x startx) px)
-                                    (+ y1 (- y starty) py)
-                                    (+ x2 (- x startx) px)
-                                    (+ y2 (- y starty) py)
-                                    :line-thickness 4
-                                    :ink *highlight-color*)))
+	            (dragging-output*
+                        (pane
+                         :finish-on-release t
+                         :feedback
+                         (lambda (record stream initial-x initial-y x y event)
+                           (flet ((draw-feedback ()
+                                    ;; we could probably get by
+                                    ;; with updating the output
+                                    ;; records for each drawn
+                                    ;; item, but for the moment
+                                    ;; we just redraw everything.
+                                    (with-output-to-output-record (stream)
+                                      (draw-line* stream
+                                                  (+ x1 (- x startx) px)
+                                                  (+ y1 (- y starty) py)
+                                                  (+ x2 (- x startx) px)
+                                                  (+ y2 (- y starty) py)
+                                                  :line-thickness 4
+                                                  :ink +green+)
+                                      (draw-circle* pane
+                                                    (+ x1 (- x startx) px)
+                                                    (+ y1 (- y starty) py)
+                                                    6
+                                                    :ink ink :filled t)
+                                      (draw-circle* pane
+                                                    (+ x2 (- x startx) px)
+                                                    (+ y2 (- y starty) py)
+                                                    6
+                                                    :ink ink :filled t)
+                                      (flet ((connect-neighbors (point)
+                                               (let ((neighbors
+                                                      (remove line (find-lines-containing point shapes))))
+                                                 (loop for other-line in neighbors
+                                                    do (let ((other-point
+                                                              (if (eq (line-start-point other-line) point)
+                                                                  (line-end-point other-line)
+                                                                  (line-start-point other-line))))
+                                                         (with-accessors ((nx1 point-x)
+                                                                          (ny1 point-y))
+                                                             point
+                                                           (with-accessors ((nx2 point-x)
+                                                                            (ny2 point-y))
+                                                               other-point
+                                                             (draw-line* pane
+                                                                         (+ nx1 (- x startx) px)
+                                                                         (+ ny1 (- y starty) py)
+                                                                         nx2
+                                                                         ny2
+                                                                         :line-thickness 4
+                                                                         :ink +green+))))))))
+                                        (connect-neighbors p1)
+                                        (connect-neighbors p2)))))
+                             (multiple-value-bind (record-x record-y)
+                                 (output-record-position record)
+                               #+(or)
+                               (let ((erase-final t))
+                                 (finish-on-release t)
+                                 (flet ((simple-erase ()
+	                                  (when erase-final
+		                            (when (output-record-parent record)
+		                              (delete-output-record record (output-record-parent record)))
+		                            (climi::with-double-buffering
+		                                ((stream record) (buffer-rectangle))
+		                              (stream-replay stream buffer-rectangle)))))))
+	                       (let ((dx (- record-x initial-x))
+	                             (dy (- record-y initial-y)))
+                                 (case event
+                                   (:draw
+                                    (with-bounding-rectangle* (old-x1 old-y1 old-x2 old-y2)
+	                                record
+	                              (when (output-record-parent record)
+		                        (delete-output-record record (output-record-parent record)))
+	                              (setf (output-record-position record)
+		                            (values (+ dx x) (+  dy y)))
+                                      (add-output-record (draw-feedback) record)
+	                              (stream-add-output-record stream record)
+	                              (with-bounding-rectangle* (new-x1 new-y1 new-x2 new-y2)
+		                          record
+		                        (multiple-value-bind (area-x1 area-y1 area-x2 area-y2)
+		                            (climi::bound-rectangles old-x1 old-y1 old-x2 old-y2
+				                                     new-x1 new-y1 new-x2 new-y2)
+		                          (climi::with-double-buffering
+		                              ((stream area-x1 area-y1 area-x2 area-y2)
+			                       (buffer-rectangle))
+		                            (stream-replay stream buffer-rectangle))))))
+                                   (:erase
+                                    (with-bounding-rectangle* (x1 y1 x2 y2)
+		                        record
+		                      (clear-output-record record)
+                                      (climi::with-double-buffering
+		                          ((stream x1 y1 x2 y2)
+			                   (buffer-rectangle))
+		                        (stream-replay stream buffer-rectangle)))))))))))
 	          (setf x1 (+ x1 (- x startx) px))
                   (setf y1 (+ y1 (- y starty) py))
                   (setf x2 (+ x2 (- x startx) px))
