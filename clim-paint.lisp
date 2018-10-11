@@ -59,6 +59,9 @@
 ;;;
 (defparameter *highlight-color* +orange+)
 
+(defparameter *drag-color* +green+)
+
+
 ;;;
 ;;; clim-paint frame
 (define-application-frame clim-paint ()
@@ -267,32 +270,124 @@ of pane."
   (multiple-value-bind (x y) (stream-pointer-position pane)
     (make-mutable-point x y)))
 
-(define-clim-paint-command (com-move-point)
-    ((point point :prompt "point")
-     (x real :prompt "X")
-     (y real :prompt "Y"))
-  (with-accessors ((shapes shapes))
-      *application-frame*
-    (when (and point x y)
-      (with-slots ((point-x x)
-                   (point-y y))
-          point
-        (setf point-x (max x 0))
-        (setf point-y (max y 0))))))
+;;
+;; dragging-output doesn't support the feedback arg. No reason it
+;; shouldn't so let's take McCLIM's version and make a new version
+;; that takes a feedback arg.
+(locally
+    (declare #+sbcl (sb-ext:muffle-conditions style-warning))
+  (defmacro dragging-output* ((&optional (stream *standard-output*) &rest args
+                                         &key (repaint t)
+                                         finish-on-release
+                                         multiple-window)
+                               &body body)
+    (declare (ignore repaint finish-on-release multiple-window feedback))
+    (let ((record (gensym "record"))
+          (feedback-fn (gensym "feedback-fn"))
+          (draw-feedback-fn (gensym "feedback-fn")))
+      `(let* ((,record (with-output-to-output-record (,stream)))
+              (,draw-feedback-fn
+               ,@body)
+              (,feedback-fn
+               (lambda
+                   (record stream initial-x initial-y x y event)
+                 (with-accessors ((ink ink)
+                                  (shapes shapes))
+                     *application-frame*)
+                 (multiple-value-bind (record-x record-y)
+                     (output-record-position record)
+                   #+(or)
+                   (let ((erase-final t))
+                     (finish-on-release t)
+                     (flet ((simple-erase ()
+	                      (when erase-final
+		                (when (output-record-parent record)
+		                  (delete-output-record record (output-record-parent record)))
+		                (climi::with-double-buffering
+		                    ((stream record) (buffer-rectangle))
+		                  (stream-replay stream buffer-rectangle)))))))
+	           (let ((dx (- record-x initial-x))
+	                 (dy (- record-y initial-y)))
+                     (case event
+                       (:draw
+                        (with-bounding-rectangle* (old-x1 old-y1 old-x2 old-y2)
+	                    record
+	                  (when (output-record-parent record)
+		            (delete-output-record record (output-record-parent record)))
+	                  (setf (output-record-position record)
+		                (values (+ dx x) (+  dy y)))
+                          (add-output-record (funcall ,draw-feedback-fn stream x y) record)
+	                  (stream-add-output-record stream record)
+	                  (with-bounding-rectangle* (new-x1 new-y1 new-x2 new-y2)
+		              record
+		            (multiple-value-bind (area-x1 area-y1 area-x2 area-y2)
+		                (climi::bound-rectangles old-x1 old-y1 old-x2 old-y2
+				                         new-x1 new-y1 new-x2 new-y2)
+		              (climi::with-double-buffering
+		                  ((stream area-x1 area-y1 area-x2 area-y2)
+			           (buffer-rectangle))
+		                (stream-replay stream buffer-rectangle))))))
+                       (:erase
+                        (with-bounding-rectangle* (x1 y1 x2 y2)
+		            record
+		          (clear-output-record record)
+                          (climi::with-double-buffering
+		              ((stream x1 y1 x2 y2)
+			       (buffer-rectangle))
+		            (stream-replay stream buffer-rectangle))))))))))
+        (drag-output-record ,stream ,record :erase-final t ,@args :feedback ,feedback-fn)))))
 
 (define-clim-paint-command (com-drag-move-point)
-    ((presentation t))
+    ((point point))
   (multiple-value-bind (px py)
       (point-position (view-origin *application-frame*))
-    (with-accessors ((ink ink))
+
+    (with-accessors ((shapes shapes)
+                     (ink ink))
         *application-frame*
       (let ((pane (get-frame-pane *application-frame* 'app)))
-        (multiple-value-bind (x y)
-	    (dragging-output (pane :finish-on-release t)
-	      (draw-circle pane (get-pointer-position pane) 6
-                           :ink ink :filled t))
-          (let ((old-point (presentation-object presentation)))
-            (com-move-point old-point (- x px) (- y py))))))))
+        (multiple-value-bind (startx starty)
+            (stream-pointer-position pane)
+          (multiple-value-bind (x y)
+	      (dragging-output*
+                  (pane :finish-on-release t)
+                (lambda (stream x y)
+                  (flet ((connect-neighbors (point)
+                           (let ((neighbors
+                                  (find-lines-containing point shapes)))
+                             (loop for other-line in neighbors
+                                do (let ((other-point
+                                          (if (eq (line-start-point other-line) point)
+                                              (line-end-point other-line)
+                                              (line-start-point other-line))))
+                                     (with-accessors ((nx1 point-x) (ny1 point-y)) point
+                                       (with-accessors ((nx2 point-x) (ny2 point-y)) other-point
+                                         (draw-line* stream
+                                                     (+ nx1 (- x startx) px)
+                                                     (+ ny1 (- y starty) py)
+                                                     nx2
+                                                     ny2
+                                                     :line-thickness 4
+                                                     :ink *drag-color*))))))))
+                    (with-output-to-output-record (stream)
+                      (with-accessors ((x1 point-x) (y1 point-y)) point
+                        (draw-circle* stream
+                                      (+ x1 (- x startx) px)
+                                      (+ y1 (- y starty) py)
+                                      6
+                                      :ink ink :filled t)
+                        (connect-neighbors point))))))
+            (with-accessors ((x1 point-x) (y1 point-y)) point
+              (progn
+	        (setf x1 (+ x1 (- x startx) px))
+                (setf y1 (+ y1 (- y starty) py))))))))))
+
+(define-clim-paint-command (com-move-point)
+    ((presentation t))
+  (with-accessors ((shapes shapes))
+      *application-frame*
+    (let ((point (presentation-object presentation)))
+          (com-drag-move-point point))))
 
 (defun insert-before (new-item before-item list)
   "If before-item is a member of list, inserts new-item in list
@@ -368,13 +463,13 @@ of list. Returns the (destructively) modified list."
 
 (define-gesture-name move-point-gesture :pointer-button (:left))
 
-(define-presentation-to-command-translator point-dragging-move-translator
-    (point com-drag-move-point clim-paint
-                        :gesture move-point-gesture
-                        :menu nil
-                        :tester ((object presentation event)
-                                 (declare (ignore presentation event))
-                                 (pointp object)))
+(define-presentation-to-command-translator move-point-translator
+    (point com-move-point clim-paint
+           :gesture move-point-gesture
+           :menu nil
+           :tester ((object presentation event)
+                    (declare (ignore presentation event))
+                    (pointp object)))
     (object presentation)
   (list presentation))
 
@@ -430,116 +525,42 @@ of list. Returns the (destructively) modified list."
                    (eq point (line-end-point shape))))
      collect shape))
 
-;;
-;; dragging-output doesn't support the feedback arg. No reason it
-;; shouldn't so let's take McCLIM's version and make a new version
-;; that takes a feedback arg.
-(locally
-    (declare #+sbcl (sb-ext:muffle-conditions style-warning))
-  (defmacro dragging-output* ((&optional (stream *standard-output*) &rest args
-                                         &key (repaint t)
-                                         finish-on-release
-                                         multiple-window)
-                               &body body)
-    (declare (ignore repaint finish-on-release multiple-window feedback))
-    (let ((record (gensym "record"))
-          (feedback-fn (gensym "feedback-fn"))
-          (draw-feedback-fn (gensym "feedback-fn")))
-      `(let* ((,record (with-output-to-output-record (,stream)))
-              (,draw-feedback-fn
-               ,@body)
-              (,feedback-fn
-               (lambda
-                   (record stream initial-x initial-y x y event)
-                 (with-accessors ((ink ink)
-                                  (shapes shapes))
-                     *application-frame*)
-                 (multiple-value-bind (record-x record-y)
-                     (output-record-position record)
-                   #+(or)
-                   (let ((erase-final t))
-                     (finish-on-release t)
-                     (flet ((simple-erase ()
-	                      (when erase-final
-		                (when (output-record-parent record)
-		                  (delete-output-record record (output-record-parent record)))
-		                (climi::with-double-buffering
-		                    ((stream record) (buffer-rectangle))
-		                  (stream-replay stream buffer-rectangle)))))))
-	           (let ((dx (- record-x initial-x))
-	                 (dy (- record-y initial-y)))
-                     (case event
-                       (:draw
-                        (with-bounding-rectangle* (old-x1 old-y1 old-x2 old-y2)
-	                    record
-	                  (when (output-record-parent record)
-		            (delete-output-record record (output-record-parent record)))
-	                  (setf (output-record-position record)
-		                (values (+ dx x) (+  dy y)))
-                          (add-output-record (funcall ,draw-feedback-fn stream x y) record)
-	                  (stream-add-output-record stream record)
-	                  (with-bounding-rectangle* (new-x1 new-y1 new-x2 new-y2)
-		              record
-		            (multiple-value-bind (area-x1 area-y1 area-x2 area-y2)
-		                (climi::bound-rectangles old-x1 old-y1 old-x2 old-y2
-				                         new-x1 new-y1 new-x2 new-y2)
-		              (climi::with-double-buffering
-		                  ((stream area-x1 area-y1 area-x2 area-y2)
-			           (buffer-rectangle))
-		                (stream-replay stream buffer-rectangle))))))
-                       (:erase
-                        (with-bounding-rectangle* (x1 y1 x2 y2)
-		            record
-		          (clear-output-record record)
-                          (climi::with-double-buffering
-		              ((stream x1 y1 x2 y2)
-			       (buffer-rectangle))
-		            (stream-replay stream buffer-rectangle))))))))))
-        (drag-output-record ,stream ,record :erase-final t ,@args :feedback ,feedback-fn)))))
-
-(defparameter *drag-color* +green+)
-
 (define-clim-paint-command (com-drag-move-line)
     ((line line))
   (multiple-value-bind (px py)
       (point-position (view-origin *application-frame*))
-    (with-accessors ((ink ink)
-                     (shapes shapes))
+    (with-accessors ((shapes shapes)
+                     (ink ink))
         *application-frame*
       (let ((pane (get-frame-pane *application-frame* 'app)))
         (multiple-value-bind (startx starty)
             (stream-pointer-position pane)
-          (let ((p1 (line-start-point line))
-                (p2 (line-end-point line)))
-            (with-accessors ((x1 point-x) (y1 point-y)) p1
-              (with-accessors ((x2 point-x) (y2 point-y)) p2
-                (multiple-value-bind (x y)
-	            (dragging-output*
-                        (pane
-                         :finish-on-release t)
-                      (lambda (stream x y)
-                        (flet ((connect-neighbors (point)
-                                 (let ((neighbors
-                                        (remove line (find-lines-containing point shapes))))
-                                   (loop for other-line in neighbors
-                                      do (let ((other-point
-                                                (if (eq (line-start-point other-line) point)
-                                                    (line-end-point other-line)
-                                                    (line-start-point other-line))))
-                                           (with-accessors ((nx1 point-x)
-                                                            (ny1 point-y))
-                                               point
-                                             (with-accessors ((nx2 point-x)
-                                                              (ny2 point-y))
-                                                 other-point
-                                               (draw-line* stream
-                                                             (+ nx1 (- x startx) px)
-                                                             (+ ny1 (- y starty) py)
-                                                             nx2
-                                                             ny2
-                                                             :line-thickness 4
-                                                             :ink *drag-color*))))))))
-                          (with-output-to-output-record (stream)
+          (multiple-value-bind (x y)
+	      (dragging-output*
+                  (pane :finish-on-release t)
+                (lambda (stream x y)
+                  (flet ((connect-neighbors (point)
+                           (let ((neighbors
+                                  (remove line (find-lines-containing point shapes))))
+                             (loop for other-line in neighbors
+                                do (let ((other-point
+                                          (if (eq (line-start-point other-line) point)
+                                              (line-end-point other-line)
+                                              (line-start-point other-line))))
+                                     (with-accessors ((nx1 point-x) (ny1 point-y)) point
+                                       (with-accessors ((nx2 point-x) (ny2 point-y)) other-point
+                                         (draw-line* stream
+                                                     (+ nx1 (- x startx) px)
+                                                     (+ ny1 (- y starty) py)
+                                                     nx2
+                                                     ny2
+                                                     :line-thickness 4
+                                                     :ink *drag-color*))))))))
+                    (with-output-to-output-record (stream)
+                      (let ((p1 (line-start-point line))
+                            (p2 (line-end-point line)))
+                        (with-accessors ((x1 point-x) (y1 point-y)) p1
+                          (with-accessors ((x2 point-x) (y2 point-y)) p2
                             (draw-circle* stream
                                           (+ x1 (- x startx) px)
                                           (+ y1 (- y starty) py)
@@ -558,11 +579,16 @@ of list. Returns the (destructively) modified list."
                                         (+ x2 (- x startx) px)
                                         (+ y2 (- y starty) py)
                                         :line-thickness 4
-                                        :ink *drag-color*)))))
-	          (setf x1 (+ x1 (- x startx) px))
-                  (setf y1 (+ y1 (- y starty) py))
-                  (setf x2 (+ x2 (- x startx) px))
-                  (setf y2 (+ y2 (- y starty) py)))))))))))
+                                        :ink *drag-color*))))))))
+            (let ((p1 (line-start-point line))
+                  (p2 (line-end-point line)))
+              (with-accessors ((x1 point-x) (y1 point-y)) p1
+                (with-accessors ((x2 point-x) (y2 point-y)) p2
+                  (progn
+	            (setf x1 (+ x1 (- x startx) px))
+                    (setf y1 (+ y1 (- y starty) py))
+                    (setf x2 (+ x2 (- x startx) px))
+                    (setf y2 (+ y2 (- y starty) py))))))))))))
 
 (define-clim-paint-command (com-move-line)
     ((presentation t))
