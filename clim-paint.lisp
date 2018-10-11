@@ -2,7 +2,7 @@
 (in-package :clim-paint)
 
 (define-application-frame clim-paint ()
-  ((shapes :initform (list nil) :accessor shapes)
+  ((shapes :initform (list (list (make-point 100 100))) :accessor shapes)
    (ink :initform +blue+ :accessor ink)
    (view-origin :initform nil :accessor view-origin))
   (:menu-bar clim-paint-menubar)
