@@ -1,8 +1,65 @@
 
 (in-package :clim-paint)
 
+;;;
+;;; mutable points
+(defclass mutable-point (point)
+  ((x :type coordinate :initarg :x :accessor :point-x)
+   (y :type coordinate :initarg :y :accessor :point-y)))
+
+(defmethod point-position ((self mutable-point))
+  (with-slots (x y) self
+    (values x y)))
+
+(defun make-mutable-point (x y)
+  (make-instance 'mutable-point
+    :x (coerce x 'coordinate)
+    :y (coerce y 'coordinate)))
+
+;;;
+;;; mutable lines
+(defclass mutable-line (line)
+  ((p1 :type point :initarg :p1)
+   (p2 :type point :initarg :p2)))
+
+(defun make-mutable-line (start-point end-point)
+  (make-instance 'mutable-line :p1 start-point :p2 end-point))
+
+(defun make-mutable-line* (start-x start-y end-x end-y)
+  (setf start-x (coerce start-x 'coordinate)
+        start-y (coerce start-y 'coordinate)
+        end-x (coerce end-x 'coordinate)
+        end-y (coerce end-y 'coordinate))
+  (if (and (= start-x end-x)
+           (= start-y end-y))
+      +nowhere+
+      (make-mutable-line (make-mutable-point start-x start-y)
+                         (make-mutable-point end-x end-y))))
+
+(defmethod line-start-point* ((line mutable-line))
+  (with-slots (p1) line
+    (with-slots (x y)
+        p1
+      (values x y))))
+
+(defmethod line-end-point* ((line mutable-line))
+  (with-slots (p2) line
+    (with-slots (x y)
+        p2
+      (values x y))))
+
+(defmethod line-start-point ((line mutable-line))
+  (with-slots (p1) line
+    p1))
+
+(defmethod line-end-point ((line mutable-line))
+  (with-slots (p2) line
+    p2))
+
+;;;
+;;; clim-paint frame
 (define-application-frame clim-paint ()
-  ((shapes :initform (list (list (make-point 100 100))) :accessor shapes)
+  ((shapes :initform (list (make-mutable-point 100 100)) :accessor shapes)
    (ink :initform +blue+ :accessor ink)
    (view-origin :initform nil :accessor view-origin))
   (:menu-bar clim-paint-menubar)
@@ -15,8 +72,8 @@
        (vertically ()
          app
          interactor))))
-;;
-;; points
+;;;
+;;; points
 (defclass point-presentation (standard-presentation) ())
 
 (define-presentation-type point-presentation ()
@@ -29,8 +86,8 @@
       (pane-frame pane)
     (draw-circle pane point 6 :ink ink :filled t)))
 
-;;
-;; lines
+;;;
+;;; lines
 (defclass line-presentation (standard-presentation) ())
 
 (define-presentation-type line-presentation ()
@@ -46,15 +103,15 @@
                (line-end-point line)
                :ink ink)))
 
-;;
-;; HACK ALERT!
-;;
-;; This present* method feels like a hack. It would be great if there
-;; were a way (that I knew of) for embedding these kinds of options in
-;; the default present presentation-method stuff. As it is, I can
-;; dispatch on the class of the object I'm presenting, but I don't
-;; want to have a big switch statement inside my main display
-;; function, so use this hack until I figure out a better mechanism.
+;;;
+;;; HACK ALERT!
+;;;
+;;; This present* method feels like a hack. It would be great if there
+;;; were a way (that I knew of) for embedding these kinds of options in
+;;; the default present presentation-method stuff. As it is, I can
+;;; dispatch on the class of the object I'm presenting, but I don't
+;;; want to have a big switch statement inside my main display
+;;; function, so use this hack until I figure out a better mechanism.
 
 (defgeneric present* (object)
   (:method ((point point))
@@ -66,8 +123,8 @@
              'line
              :record-type 'line-presentation :single-box nil)))
 
-;;
-;; main display function
+;;;
+;;; main display function
 (defun clim-paint-display (frame pane)
   (with-accessors ((shapes shapes)
                    (ink ink)
@@ -77,8 +134,10 @@
     ;; now let's draw the points
     (multiple-value-bind (left top)
         (stream-cursor-position pane)
-      (setf view-origin (make-point left top)))
-    
+      (setf view-origin (make-mutable-point left top)))
+    (mapcar #'present* shapes)
+
+    #+nil
     (let ((points (car shapes)))
       (loop
          :for previous-point = nil then point
@@ -86,29 +145,30 @@
          :do
            (present* point)
            (when previous-point
-             (present* (make-line previous-point point)))))))
+             (present* (make-mutable-line previous-point point)))))))
 
 (defun point+ (p1 p2)
   (multiple-value-bind (x1 y1)
       (point-position p1)
     (multiple-value-bind (x2 y2)
         (point-position p2)
-      (make-point (+ x1 x2) (+ y1 y2)))))
+      (make-mutable-point (+ x1 x2) (+ y1 y2)))))
 
 (defun point= (p1 p2)
-  (multiple-value-bind (x1 y1)
-      (point-position p1)
-    (multiple-value-bind (x2 y2)
-        (point-position p2)
-      (and (= x1 x2)
-           (= y1 y2)))))
+  (when (and (pointp p1) (pointp p2))
+    (multiple-value-bind (x1 y1)
+        (point-position p1)
+      (multiple-value-bind (x2 y2)
+          (point-position p2)
+        (and (= x1 x2)
+             (= y1 y2))))))
 
 (defun point- (p1 p2)
   (multiple-value-bind (x1 y1)
       (point-position p1)
     (multiple-value-bind (x2 y2)
         (point-position p2)
-      (make-point (- x1 x2) (- y1 y2)))))
+      (make-mutable-point (- x1 x2) (- y1 y2)))))
 
 (defun point-distance (p1 p2)
   (multiple-value-bind (x1 y1)
@@ -180,7 +240,7 @@
         (with-accessors ((view-origin view-origin))
             frame
           (let ((line (presentation-object record)))
-            (line-point-between-p (point- (make-point x y) view-origin)
+            (line-point-between-p (point- (make-mutable-point x y) view-origin)
                                   (line-start-point line)
                                   (line-end-point line))))))))
 
@@ -188,7 +248,7 @@
   "Returns a point with x and y values of the stream-pointer-position
 of pane."
   (multiple-value-bind (x y) (stream-pointer-position pane)
-    (make-point x y)))
+    (make-mutable-point x y)))
 
 (define-clim-paint-command (com-move-point)
     ((point point :prompt "point")
@@ -196,12 +256,12 @@ of pane."
      (y real :prompt "Y"))
   (with-accessors ((shapes shapes))
       *application-frame*
-    (let ((points (car shapes)))
-      (when (and point x y)
-        (let ((tail (member point points)))
-          (when tail
-            (rplaca tail (make-point (max x 0)
-                                     (max y 0)))))))))
+    (when (and point x y)
+      (with-slots ((point-x x)
+                   (point-y y))
+          point
+        (setf point-x (max x 0))
+        (setf point-y (max y 0))))))
 
 (define-clim-paint-command (com-drag-move-point)
     ((presentation t))
@@ -245,14 +305,24 @@ of list. Returns the (destructively) modified list."
      (previous-point point))
   (with-accessors ((shapes shapes))
       *application-frame*
-    (let ((points (car shapes)))
-      (when (and x y)
-        (let ((point (make-point (max x 0)
-                                 (max y 0))))
-          (if previous-point
-              (insert-before point previous-point points)
-              (push point points))))
-      (setf (car shapes) points))))
+    (when (and x y)
+      (let ((point (make-mutable-point (max x 0)
+                                       (max y 0))))
+        (if previous-point
+            (progn
+              (insert-before point previous-point shapes)
+              (com-add-line point previous-point))
+            (push point shapes))
+        point))))
+
+(define-clim-paint-command (com-add-line :name t)
+    ((point1 point :prompt "Point 1")
+     (point2 point :prompt "Point 2"))
+  (with-accessors ((shapes shapes))
+      *application-frame*
+    (when (and point1 point2)
+      (let ((line (make-mutable-line point1 point2)))
+        (push line shapes)))))
 
 (define-clim-paint-command (com-drag-add-point)
     ((old-point t))
@@ -291,17 +361,38 @@ of list. Returns the (destructively) modified list."
     (object presentation)
   (list presentation))
 
+(define-clim-paint-command (com-drag-split-line)
+    ((line line))
+  (multiple-value-bind (px py)
+      (point-position (view-origin *application-frame*))
+    (with-accessors ((ink ink)
+                     (shapes shapes))
+        *application-frame*
+      (let ((pane (get-frame-pane *application-frame* 'app)))
+        (multiple-value-bind (x y)
+	    (dragging-output (pane :finish-on-release t)
+	      (draw-circle pane (get-pointer-position pane) 6
+                           :ink ink :filled t))
+          (let ((p1 (find (line-start-point line) shapes :test 'point=))
+                (p2 (find (line-end-point line) shapes :test 'point=)))
+            (setf shapes (delete-if (lambda (x)
+                                      (and (linep x)
+                                           (or
+                                            (and (point= (line-start-point x) p1)
+                                                 (point= (line-end-point x) p2))
+                                            (and (point= (line-start-point x) p2)
+                                                 (point= (line-end-point x) p1)))))
+                                    shapes))
+            (let ((new-point (com-add-point (- x px) (- y py))))
+              (com-add-line p1 new-point)
+              (com-add-line p2 new-point))))))))
+
 (define-clim-paint-command (com-split-line)
     ((presentation t))
   (with-accessors ((shapes shapes))
       *application-frame*
-    (let ((points (car shapes)))
-      (let ((line (presentation-object presentation)))
-        (let ((i1 (position (line-start-point line) points :test 'point=))
-              (i2 (position (line-end-point line) points :test 'point=)))
-          (let ((index (min (or i1 (1- (length points)))
-                            (or i2 (1- (length points))))))
-            (com-drag-add-point (elt points (1+ index)))))))))
+    (let ((line (presentation-object presentation)))
+      (com-drag-split-line line))))
 
 (define-gesture-name click-line-gesture :pointer-button (:left :control))
 
