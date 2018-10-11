@@ -47,6 +47,26 @@
                :ink ink)))
 
 ;;
+;; HACK ALERT!
+;;
+;; This present* method feels like a hack. It would be great if there
+;; were a way (that I knew of) for embedding these kinds of options in
+;; the default present presentation-method stuff. As it is, I can
+;; dispatch on the class of the object I'm presenting, but I don't
+;; want to have a big switch statement inside my main display
+;; function, so use this hack until I figure out a better mechanism.
+
+(defgeneric present* (object)
+  (:method ((point point))
+    (present point
+             'point
+             :record-type 'point-presentation :single-box t))
+  (:method ((line line))
+    (present line
+             'line
+             :record-type 'line-presentation :single-box nil)))
+
+;;
 ;; main display function
 (defun clim-paint-display (frame pane)
   (with-accessors ((shapes shapes)
@@ -64,13 +84,9 @@
          :for previous-point = nil then point
          :for point :in points
          :do
-           (present point
-                    'point
-                    :record-type 'point-presentation :single-box t)
+           (present* point)
            (when previous-point
-             (present (make-line previous-point point)
-                      'line
-                      :record-type 'line-presentation :single-box nil))))))
+             (present* (make-line previous-point point)))))))
 
 (defun point+ (p1 p2)
   (multiple-value-bind (x1 y1)
