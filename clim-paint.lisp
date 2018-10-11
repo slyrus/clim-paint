@@ -57,6 +57,9 @@
     p2))
 
 ;;;
+(defparameter *highlight-color* +orange+)
+
+;;;
 ;;; clim-paint frame
 (define-application-frame clim-paint ()
   ((shapes :initform (list (make-mutable-point 100 100)) :accessor shapes)
@@ -210,6 +213,23 @@
           (find-top-level-output-record parent)))))
 
 (define-presentation-method highlight-presentation
+    ((type point) (record point-presentation) stream state)
+  (let ((point (presentation-object record)))
+    (with-accessors ((x point-x)
+                     (y point-y))
+        point
+      (case state
+        (:highlight
+         (let ((origin (view-origin *application-frame*)))
+           (draw-circle stream (point+ point origin) 6 :ink *highlight-color* :filled t)))
+        (:unhighlight (queue-repaint stream
+                                     (make-instance 'window-repaint-event
+                                                    :sheet stream
+                                                    :region (transform-region
+                                                             (sheet-native-transformation stream)
+                                                             record))))))))
+
+(define-presentation-method highlight-presentation
     ((type line) (record line-presentation) stream state)
   (let ((line (presentation-object record)))
     (with-accessors ((start line-start-point)
@@ -217,14 +237,11 @@
         line
       (case state
         (:highlight
-         (let ((line-vector (point- end start))
-               (line-length (point-distance start end))
-               (origin (view-origin *application-frame*)))
-           (declare (ignore line-vector line-length))
+         (let ((origin (view-origin *application-frame*)))
            (draw-line stream
                       (point+ origin start)
                       (point+ origin end)
-                      :line-thickness 4 :ink +orange+)))
+                      :line-thickness 4 :ink *highlight-color*)))
         (:unhighlight (queue-repaint stream
                                      (make-instance 'window-repaint-event
                                                     :sheet stream
