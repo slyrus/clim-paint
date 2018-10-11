@@ -28,13 +28,7 @@
   (with-accessors ((ink ink)
                    (view-origin view-origin))
       (pane-frame pane)
-    (with-output-as-presentation
-        (t
-         point
-         'point
-         :record-type 'point-presentation
-         :single-box t)
-      (draw-circle pane point 6 :ink ink :filled t))))
+    (draw-circle pane point 6 :ink ink :filled t)))
 
 ;;
 ;; lines
@@ -43,21 +37,15 @@
 (define-presentation-type line-presentation ()
   :inherit-from 'line)
 
-(define-presentation-method present (line (type line-presentation) pane
+(define-presentation-method present (line (type line) pane
                                            view &key)
   (with-accessors ((ink ink)
                    (view-origin view-origin))
       (pane-frame pane)
-    (with-output-as-presentation
-        (t
-         line
-         'line
-         :record-type 'line-presentation
-         :single-box t)
-      (draw-line pane
-                 (line-start-point line)
-                 (line-end-point line)
-                 :ink ink))))
+    (draw-line pane
+               (line-start-point line)
+               (line-end-point line)
+               :ink ink)))
 
 ;;
 ;; main display function
@@ -77,9 +65,13 @@
          :for previous-point = nil then point
          :for point :in points
          :do
-           (present point 'point-presentation)
+           (present point
+                    'point-presentation
+                    :record-type 'point-presentation)
            (when previous-point
-             (present (make-line previous-point point) 'line-presentation))))))
+             (present (make-line previous-point point)
+                      'line
+                      :record-type 'line-presentation :single-box t))))))
 
 (defun point+ (p1 p2)
   (multiple-value-bind (x1 y1)
