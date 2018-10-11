@@ -4,8 +4,8 @@
 ;;;
 ;;; mutable points
 (defclass mutable-point (point)
-  ((x :type coordinate :initarg :x :accessor :point-x)
-   (y :type coordinate :initarg :y :accessor :point-y)))
+  ((x :type coordinate :initarg :x :accessor point-x)
+   (y :type coordinate :initarg :y :accessor point-y)))
 
 (defmethod point-position ((self mutable-point))
   (with-slots (x y) self
