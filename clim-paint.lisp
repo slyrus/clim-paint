@@ -15,7 +15,6 @@
        (vertically ()
          app
          interactor))))
-
 ;;
 ;; points
 (defclass point-presentation (standard-presentation) ())
@@ -23,7 +22,7 @@
 (define-presentation-type point-presentation ()
   :inherit-from 'point)
 
-(define-presentation-method present (point (type point-presentation) pane
+(define-presentation-method present (point (type point) pane
                                            view &key)
   (with-accessors ((ink ink)
                    (view-origin view-origin))
@@ -66,12 +65,12 @@
          :for point :in points
          :do
            (present point
-                    'point-presentation
-                    :record-type 'point-presentation)
+                    'point
+                    :record-type 'point-presentation :single-box t)
            (when previous-point
              (present (make-line previous-point point)
                       'line
-                      :record-type 'line-presentation :single-box t))))))
+                      :record-type 'line-presentation :single-box nil))))))
 
 (defun point+ (p1 p2)
   (multiple-value-bind (x1 y1)
@@ -134,18 +133,8 @@
           record
           (find-top-level-output-record parent)))))
 
-(defmethod output-record-refined-position-test ((record line-presentation) x y)
-  (let ((top (find-top-level-output-record record)))
-    (let ((stream (climi::output-history-stream top)))
-      (let ((frame (pane-frame stream)))
-        (with-accessors ((view-origin view-origin))
-            frame
-          (let ((line (presentation-object record)))
-            (line-point-between-p (point- (make-point x y) view-origin)
-                                  (line-start-point line)
-                                  (line-end-point line))))))))
-
-(defmethod highlight-output-record ((record line-presentation) stream state)
+(define-presentation-method highlight-presentation
+    ((type line) (record line-presentation) stream state)
   (let ((line (presentation-object record)))
     (with-accessors ((start line-start-point)
                      (end line-end-point))
@@ -159,13 +148,25 @@
            (draw-line stream
                       (point+ origin start)
                       (point+ origin end)
-                      :line-thickness 4 :ink +yellow+)))
+                      :line-thickness 4 :ink +orange+)))
         (:unhighlight (queue-repaint stream
                                      (make-instance 'window-repaint-event
                                                     :sheet stream
                                                     :region (transform-region
                                                              (sheet-native-transformation stream)
                                                              record))))))))
+
+(define-presentation-method presentation-refined-position-test
+    ((type line) (record line-presentation) x y)
+  (let ((top (find-top-level-output-record record)))
+    (let ((stream (climi::output-history-stream top)))
+      (let ((frame (pane-frame stream)))
+        (with-accessors ((view-origin view-origin))
+            frame
+          (let ((line (presentation-object record)))
+            (line-point-between-p (point- (make-point x y) view-origin)
+                                  (line-start-point line)
+                                  (line-end-point line))))))))
 
 (defun get-pointer-position (pane)
   "Returns a point with x and y values of the stream-pointer-position
@@ -253,7 +254,7 @@ of list. Returns the (destructively) modified list."
 (define-gesture-name add-point-gesture :pointer-button (:left :control))
 
 (define-presentation-to-command-translator point-dragging-add-translator
-    (point-presentation com-drag-add-point clim-paint
+    (point com-drag-add-point clim-paint
            :gesture add-point-gesture
            :menu nil
            :tester ((object presentation event)
@@ -265,7 +266,7 @@ of list. Returns the (destructively) modified list."
 (define-gesture-name move-point-gesture :pointer-button (:left))
 
 (define-presentation-to-command-translator point-dragging-move-translator
-    (point-presentation com-drag-move-point clim-paint
+    (point com-drag-move-point clim-paint
                         :gesture move-point-gesture
                         :menu nil
                         :tester ((object presentation event)
