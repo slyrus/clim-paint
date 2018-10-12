@@ -18,6 +18,28 @@ In the future, I plan to add more types of drawn outputs (rectangles,
 circles/ellipses, bezier curves, etc...) and to enable support for
 editing shapes via the CLIM interactor.
 
+## Shapes
+
+### Points
+
+### Lines
+
+## Presentations
+
+### Types of Presentations
+
+#### point-presentation
+
+#### line-presenation
+
+### present* generic function
+
+## Highlighting
+
+## Dragging
+
+## Commands
+
 ## License
 
 BSD
