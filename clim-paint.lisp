@@ -92,7 +92,7 @@
 (define-presentation-method present (point (type point) pane
                                            (view clim-paint-view) &key)
   (with-accessors ((ink ink))
-      (pane-frame pane)
+      *application-frame*
     (draw-circle pane point 6 :ink ink :filled t)))
 
 ;;;
@@ -105,7 +105,7 @@
 (define-presentation-method present (line (type line) pane
                                           (view clim-paint-view) &key)
   (with-accessors ((ink ink))
-      (pane-frame pane)
+      *application-frame*
     (draw-line pane
                (line-start-point line)
                (line-end-point line)
