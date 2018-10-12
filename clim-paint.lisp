@@ -358,10 +358,8 @@ of pane."
 
 (define-clim-paint-command (com-move-point)
     ((presentation presentation))
-  (with-accessors ((shapes shapes))
-      *application-frame*
-    (let ((point (presentation-object presentation)))
-          (com-drag-move-point point))))
+  (let ((point (presentation-object presentation)))
+    (com-drag-move-point point)))
 
 (defun insert-before (new-item before-item list)
   "If before-item is a member of list, inserts new-item in list
