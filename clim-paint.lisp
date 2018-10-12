@@ -57,10 +57,16 @@
     p2))
 
 ;;;
+;;; some special variables to be used for drawing/dragging
 (defparameter *highlight-color* +orange+)
 
 (defparameter *drag-color* +green+)
 
+;;
+;; clim-paint view
+(defclass clim-paint-view (view) ())
+
+(defparameter +clim-paint-view+ (make-instance 'clim-paint-view))
 
 ;;;
 ;;; clim-paint frame
@@ -71,7 +77,8 @@
   (:menu-bar clim-paint-menubar)
   (:panes
    (app :application
-        :display-function #'clim-paint-display)
+        :display-function #'clim-paint-display
+        :default-view +clim-paint-view+)
    (interactor :interactor :height 300 :width 600))
   (:layouts
    (default
@@ -86,7 +93,7 @@
   :inherit-from 'point)
 
 (define-presentation-method present (point (type point) pane
-                                           view &key)
+                                           (view clim-paint-view) &key)
   (with-accessors ((ink ink)
                    (view-origin view-origin))
       (pane-frame pane)
@@ -100,7 +107,7 @@
   :inherit-from 'line)
 
 (define-presentation-method present (line (type line) pane
-                                           view &key)
+                                          (view clim-paint-view) &key)
   (with-accessors ((ink ink)
                    (view-origin view-origin))
       (pane-frame pane)
