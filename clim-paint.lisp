@@ -13,8 +13,8 @@
 
 (defun make-mutable-point (x y)
   (make-instance 'mutable-point
-    :x (coerce x 'coordinate)
-    :y (coerce y 'coordinate)))
+                 :x (coerce x 'coordinate)
+                 :y (coerce y 'coordinate)))
 
 ;;;
 ;;; mutable lines
@@ -188,7 +188,7 @@
                     (square (- x2 x1)))))))))
 
 (defun line-point-between-p (test-point line-point-1 line-point-2
-                                 &key (line-fuzz 7))
+                             &key (line-fuzz 7))
   (let ((distance (point-line-distance test-point line-point-1 line-point-2)))
     (values (< distance line-fuzz)
             distance)))
@@ -210,12 +210,14 @@
       (case state
         (:highlight
          (draw-circle stream point 6 :ink *highlight-color* :filled t))
-        (:unhighlight (queue-repaint stream
-                                     (make-instance 'window-repaint-event
-                                                    :sheet stream
-                                                    :region (transform-region
-                                                             (sheet-native-transformation stream)
-                                                             record))))))))
+        (:unhighlight
+         (queue-repaint
+          stream
+          (make-instance 'window-repaint-event
+                         :sheet stream
+                         :region (transform-region
+                                  (sheet-native-transformation stream)
+                                  record))))))))
 
 (define-presentation-method highlight-presentation
     ((type line) (record line-presentation) stream state)
@@ -227,12 +229,14 @@
         (:highlight
          (draw-line stream start end
                     :line-thickness 4 :ink *highlight-color*))
-        (:unhighlight (queue-repaint stream
-                                     (make-instance 'window-repaint-event
-                                                    :sheet stream
-                                                    :region (transform-region
-                                                             (sheet-native-transformation stream)
-                                                             record))))))))
+        (:unhighlight
+         (queue-repaint
+          stream
+          (make-instance 'window-repaint-event
+                         :sheet stream
+                         :region (transform-region
+                                  (sheet-native-transformation stream)
+                                  record))))))))
 
 (define-presentation-method presentation-refined-position-test
     ((type line) (record line-presentation) x y)
@@ -277,41 +281,41 @@ of pane."
                    (let ((erase-final t))
                      (finish-on-release t)
                      (flet ((simple-erase ()
-	                      (when erase-final
-		                (when (output-record-parent record)
-		                  (delete-output-record record (output-record-parent record)))
-		                (climi::with-double-buffering
-		                    ((stream record) (buffer-rectangle))
-		                  (stream-replay stream buffer-rectangle)))))))
-	           (let ((dx (- record-x initial-x))
-	                 (dy (- record-y initial-y)))
+                              (when erase-final
+                                (when (output-record-parent record)
+                                  (delete-output-record record (output-record-parent record)))
+                                (climi::with-double-buffering
+                                    ((stream record) (buffer-rectangle))
+                                  (stream-replay stream buffer-rectangle)))))))
+                   (let ((dx (- record-x initial-x))
+                         (dy (- record-y initial-y)))
                      (case event
                        (:draw
                         (with-bounding-rectangle* (old-x1 old-y1 old-x2 old-y2)
-	                    record
-	                  (when (output-record-parent record)
-		            (delete-output-record record (output-record-parent record)))
-	                  (setf (output-record-position record)
-		                (values (+ dx x) (+  dy y)))
+                            record
+                          (when (output-record-parent record)
+                            (delete-output-record record (output-record-parent record)))
+                          (setf (output-record-position record)
+                                (values (+ dx x) (+  dy y)))
                           (add-output-record (funcall ,draw-feedback-fn stream x y) record)
-	                  (stream-add-output-record stream record)
-	                  (with-bounding-rectangle* (new-x1 new-y1 new-x2 new-y2)
-		              record
-		            (multiple-value-bind (area-x1 area-y1 area-x2 area-y2)
-		                (climi::bound-rectangles old-x1 old-y1 old-x2 old-y2
-				                         new-x1 new-y1 new-x2 new-y2)
-		              (climi::with-double-buffering
-		                  ((stream area-x1 area-y1 area-x2 area-y2)
-			           (buffer-rectangle))
-		                (stream-replay stream buffer-rectangle))))))
+                          (stream-add-output-record stream record)
+                          (with-bounding-rectangle* (new-x1 new-y1 new-x2 new-y2)
+                              record
+                            (multiple-value-bind (area-x1 area-y1 area-x2 area-y2)
+                                (climi::bound-rectangles old-x1 old-y1 old-x2 old-y2
+                                                         new-x1 new-y1 new-x2 new-y2)
+                              (climi::with-double-buffering
+                                  ((stream area-x1 area-y1 area-x2 area-y2)
+                                   (buffer-rectangle))
+                                (stream-replay stream buffer-rectangle))))))
                        (:erase
                         (with-bounding-rectangle* (x1 y1 x2 y2)
-		            record
-		          (clear-output-record record)
+                            record
+                          (clear-output-record record)
                           (climi::with-double-buffering
-		              ((stream x1 y1 x2 y2)
-			       (buffer-rectangle))
-		            (stream-replay stream buffer-rectangle))))))))))
+                              ((stream x1 y1 x2 y2)
+                               (buffer-rectangle))
+                            (stream-replay stream buffer-rectangle))))))))))
         (drag-output-record ,stream ,record :erase-final t ,@args :feedback ,feedback-fn)))))
 
 (define-clim-paint-command (com-drag-move-point)
@@ -323,7 +327,7 @@ of pane."
       (multiple-value-bind (startx starty)
           (stream-pointer-position pane)
         (multiple-value-bind (x y)
-	    (dragging-output*
+            (dragging-output*
                 (pane :finish-on-release t)
               (lambda (stream x y)
                 (flet ((connect-neighbors (point)
@@ -353,7 +357,7 @@ of pane."
                       (connect-neighbors point))))))
           (with-accessors ((x1 point-x) (y1 point-y)) point
             (progn
-	      (setf x1 (+ x1 (- x startx)))
+              (setf x1 (+ x1 (- x startx)))
               (setf y1 (+ y1 (- y starty))))))))))
 
 (define-clim-paint-command (com-move-point)
@@ -377,9 +381,9 @@ of pane."
 immediately after new-item, otherwise it appends new-item to the end
 of list. Returns the (destructively) modified list."
   (let ((tail (member after-item list)))
-            (if tail
-                (rplacd tail (cons new-item (cdr tail)))
-                (append list (list new-item))))
+    (if tail
+        (rplacd tail (cons new-item (cdr tail)))
+        (append list (list new-item))))
   list)
 
 (define-clim-paint-command (com-add-point :name t)
@@ -451,8 +455,8 @@ of list. Returns the (destructively) modified list."
       frame
     (let ((pane (get-frame-pane frame 'app)))
       (multiple-value-bind (x y)
-	  (dragging-output (pane :finish-on-release t)
-	    (draw-circle pane (get-pointer-position pane) 6
+          (dragging-output (pane :finish-on-release t)
+            (draw-circle pane (get-pointer-position pane) 6
                          :ink ink :filled t))
         (let ((p1 (find (line-start-point line) shapes :test 'point=))
               (p2 (find (line-end-point line) shapes :test 'point=)))
@@ -501,7 +505,7 @@ of list. Returns the (destructively) modified list."
       (multiple-value-bind (startx starty)
           (stream-pointer-position pane)
         (multiple-value-bind (x y)
-	    (dragging-output*
+            (dragging-output*
                 (pane :finish-on-release t)
               (lambda (stream x y)
                 (flet ((connect-neighbors (point)
@@ -550,7 +554,7 @@ of list. Returns the (destructively) modified list."
             (with-accessors ((x1 point-x) (y1 point-y)) p1
               (with-accessors ((x2 point-x) (y2 point-y)) p2
                 (progn
-	          (setf x1 (+ x1 (- x startx)))
+                  (setf x1 (+ x1 (- x startx)))
                   (setf y1 (+ y1 (- y starty)))
                   (setf x2 (+ x2 (- x startx)))
                   (setf y2 (+ y2 (- y starty))))))))))))
@@ -575,7 +579,7 @@ of list. Returns the (destructively) modified list."
 
 
 (define-clim-paint-command (com-quit :name t :menu "Quit")
-   ()
+    ()
   (frame-exit *application-frame*))
 
 (define-clim-paint-command (com-export-to-pdf :name t :menu "Export to PDF")
@@ -587,27 +591,27 @@ of list. Returns the (destructively) modified list."
     (with-open-file (file-stream pdf-pathname :direction :output
                                  :if-exists :supersede
                                  :element-type '(unsigned-byte 8))
-    (clim-pdf:with-output-to-pdf-stream
-        (stream file-stream
-                :header-comments '(:title "clim-paint")
-                :scale-to-fit t
-                :device-type device-type)
-      (setf (stream-default-view stream)
-            (or (stream-default-view pane)
-                (make-instance 'clim-paint-view)))
-      (break)
-      (let ((*standard-output* stream))
-        (with-accessors ((shapes shapes))
-            frame
-          (mapcar #'present* shapes)))))))
+      (clim-pdf:with-output-to-pdf-stream
+          (stream file-stream
+                  :header-comments '(:title "clim-paint")
+                  :scale-to-fit t
+                  :device-type device-type)
+        (setf (stream-default-view stream)
+              (or (stream-default-view pane)
+                  (make-instance 'clim-paint-view)))
+        (break)
+        (let ((*standard-output* stream))
+          (with-accessors ((shapes shapes))
+              frame
+            (mapcar #'present* shapes)))))))
 
 (make-command-table 'clim-paint-file-command-table
-		    :errorp nil
-		    :menu '(("Quit" :command com-quit)))
+                    :errorp nil
+                    :menu '(("Quit" :command com-quit)))
 
 (make-command-table 'clim-paint-menubar
-		    :errorp nil
-		    :menu '(("File" :menu clim-paint-file-command-table)))
+                    :errorp nil
+                    :menu '(("File" :menu clim-paint-file-command-table)))
 
 (defvar *clim-paint-app*)
 
