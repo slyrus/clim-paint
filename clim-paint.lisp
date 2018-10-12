@@ -418,9 +418,8 @@ of list. Returns the (destructively) modified list."
       *application-frame*
     (let ((pane (get-frame-pane *application-frame* 'app)))
       (multiple-value-bind (x y)
-	  (dragging-output (pane :finish-on-release t)
-	    (draw-circle pane (get-pointer-position pane) 6
-                         :ink ink :filled t))
+          (dragging-output (pane :finish-on-release t)
+            (draw-circle pane (get-pointer-position pane) 6 :ink ink :filled t))
         (com-add-point x y :previous-point old-point)))))
 
 (define-gesture-name add-point-gesture :pointer-button (:left :control))
