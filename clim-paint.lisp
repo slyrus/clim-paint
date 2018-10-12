@@ -578,6 +578,29 @@ of list. Returns the (destructively) modified list."
    ()
   (frame-exit *application-frame*))
 
+(define-clim-paint-command (com-export-to-pdf :name t :menu "Export to PDF")
+    ((pdf-pathname pathname
+                   :default *default-pathname-defaults* :insert-default t))
+  (let* ((frame *application-frame*)
+         (pane (find-pane-named frame 'app))
+         (device-type :a4))
+    (with-open-file (file-stream pdf-pathname :direction :output
+                                 :if-exists :supersede
+                                 :element-type '(unsigned-byte 8))
+    (clim-pdf:with-output-to-pdf-stream
+        (stream file-stream
+                :header-comments '(:title "clim-paint")
+                :scale-to-fit t
+                :device-type device-type)
+      (setf (stream-default-view stream)
+            (or (stream-default-view pane)
+                (make-instance 'clim-paint-view)))
+      (break)
+      (let ((*standard-output* stream))
+        (with-accessors ((shapes shapes))
+            frame
+          (mapcar #'present* shapes)))))))
+
 (make-command-table 'clim-paint-file-command-table
 		    :errorp nil
 		    :menu '(("Quit" :command com-quit)))
