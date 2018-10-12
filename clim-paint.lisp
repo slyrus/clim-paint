@@ -1,6 +1,9 @@
 
 (in-package :clim-paint)
 
+(defclass paint-object ()
+  ((ink :initarg :ink :accessor ink)))
+
 ;;;
 ;;; mutable points
 (defclass mutable-point (point)
@@ -55,6 +58,26 @@
 (defmethod line-end-point ((line mutable-line))
   (with-slots (p2) line
     p2))
+
+;;;
+;;; wrapped ellipse
+;;;
+;;; we want an ellipse object that we can modify but the
+;;; standard-ellipse is immutable and itself is a subclass of
+;;; elliptical-thing. The problem with elliptical-thiing is that it
+;;; stores the transformation of the unit circle to the ellipse, not
+;;; the underlying parameters used to define the ellipse via
+;;; make-ellipse. So, we'll store those parameters here, along with a
+;;; clim:ellipse (presumably a standard-ellipse) that gets regenerated
+;;; when the ellipse paramters change.
+(defclass mutable-ellipse (ellipse)
+  ((center-point :initarg :center-point :accessor center-point)
+   (radius-1-dx :initarg :radius-1-dx :accessor radius-1-dx)
+   (radius-1-dy :initarg :radius-1-dy :accessor radius-1-dy)
+   (radius-2-dx :initarg :radius-2-dx :accessor radius-2-dx)
+   (radius-2-dy :initarg :radius-2-dy :accessor radius-2-dy)
+   (start-angle :initarg :start-angle :accessor start-angle)
+   (end-angle :initarg :end-angle :accessor end-angle)))
 
 ;;;
 ;;; some special variables to be used for drawing/dragging

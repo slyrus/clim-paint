@@ -40,6 +40,10 @@ editing shapes via the CLIM interactor.
 
 ## Commands
 
+## Gestures
+
+## Translators
+
 ## License
 
 BSD
