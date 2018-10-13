@@ -5,30 +5,37 @@
   ((ink :initarg :ink :accessor ink)))
 
 ;;;
-;;; mutable points
-(defclass mutable-point (point)
-  ((x :type coordinate :initarg :x :accessor point-x)
-   (y :type coordinate :initarg :y :accessor point-y)))
+;;; paint points
+(defclass paint-point (point)
+  ((point :type point :initarg point :accessor %point)))
 
-(defmethod point-position ((self mutable-point))
-  (with-slots (x y) self
-    (values x y)))
+(defmethod point-position ((point paint-point))
+  (point-position (%point point)))
 
-(defun make-mutable-point (x y)
-  (make-instance 'mutable-point
+(defmethod shared-initialize :after ((point paint-point) slot-names &key x y)
+  (setf (%point point) (make-point x y)))
+
+(defmethod point-x ((point paint-point))
+  (point-x (%point point)))
+
+(defmethod point-y ((point paint-point))
+  (point-y (%point point)))
+
+(defun make-paint-point (x y)
+  (make-instance 'paint-point
                  :x (coerce x 'coordinate)
                  :y (coerce y 'coordinate)))
 
 ;;;
-;;; mutable lines
-(defclass mutable-line (line)
+;;; paint lines
+(defclass paint-line (line)
   ((p1 :type point :initarg :p1)
    (p2 :type point :initarg :p2)))
 
-(defun make-mutable-line (start-point end-point)
-  (make-instance 'mutable-line :p1 start-point :p2 end-point))
+(defun make-paint-line (start-point end-point)
+  (make-instance 'paint-line :p1 start-point :p2 end-point))
 
-(defun make-mutable-line* (start-x start-y end-x end-y)
+(defun make-paint-line* (start-x start-y end-x end-y)
   (setf start-x (coerce start-x 'coordinate)
         start-y (coerce start-y 'coordinate)
         end-x (coerce end-x 'coordinate)
@@ -36,26 +43,26 @@
   (if (and (= start-x end-x)
            (= start-y end-y))
       +nowhere+
-      (make-mutable-line (make-mutable-point start-x start-y)
-                         (make-mutable-point end-x end-y))))
+      (make-paint-line (make-paint-point start-x start-y)
+                         (make-paint-point end-x end-y))))
 
-(defmethod line-start-point* ((line mutable-line))
+(defmethod line-start-point* ((line paint-line))
   (with-slots (p1) line
     (with-slots (x y)
         p1
       (values x y))))
 
-(defmethod line-end-point* ((line mutable-line))
+(defmethod line-end-point* ((line paint-line))
   (with-slots (p2) line
     (with-slots (x y)
         p2
       (values x y))))
 
-(defmethod line-start-point ((line mutable-line))
+(defmethod line-start-point ((line paint-line))
   (with-slots (p1) line
     p1))
 
-(defmethod line-end-point ((line mutable-line))
+(defmethod line-end-point ((line paint-line))
   (with-slots (p2) line
     p2))
 
@@ -63,14 +70,14 @@
 ;;; wrapped ellipse
 ;;;
 ;;; we want an ellipse object that we can modify but the
-;;; standard-ellipse is immutable and itself is a subclass of
+;;; standard-ellipse is impaint and itself is a subclass of
 ;;; elliptical-thing. The problem with elliptical-thiing is that it
 ;;; stores the transformation of the unit circle to the ellipse, not
 ;;; the underlying parameters used to define the ellipse via
 ;;; make-ellipse. So, we'll store those parameters here, along with a
 ;;; clim:ellipse (presumably a standard-ellipse) that gets regenerated
 ;;; when the ellipse paramters change.
-(defclass mutable-ellipse (ellipse)
+(defclass paint-ellipse (ellipse)
   ((center-point :initarg :center-point :accessor center-point)
    (radius-1-dx :initarg :radius-1-dx :accessor radius-1-dx)
    (radius-1-dy :initarg :radius-1-dy :accessor radius-1-dy)
@@ -92,7 +99,7 @@
 ;;;
 ;;; clim-paint frame
 (define-application-frame clim-paint ()
-  ((shapes :initform (list (make-mutable-point 100 100)) :accessor shapes)
+  ((shapes :initform (list (make-paint-point 100 100)) :accessor shapes)
    (ink :initform +blue+ :accessor ink))
   (:menu-bar clim-paint-menubar)
   (:panes
@@ -167,7 +174,7 @@
       (point-position p1)
     (multiple-value-bind (x2 y2)
         (point-position p2)
-      (make-mutable-point (+ x1 x2) (+ y1 y2)))))
+      (make-paint-point (+ x1 x2) (+ y1 y2)))))
 
 (defun point= (p1 p2)
   (when (and (pointp p1) (pointp p2))
@@ -183,7 +190,7 @@
       (point-position p1)
     (multiple-value-bind (x2 y2)
         (point-position p2)
-      (make-mutable-point (- x1 x2) (- y1 y2)))))
+      (make-paint-point (- x1 x2) (- y1 y2)))))
 
 (defun point-distance (p1 p2)
   (multiple-value-bind (x1 y1)
@@ -264,7 +271,7 @@
 (define-presentation-method presentation-refined-position-test
     ((type line) (record line-presentation) x y)
   (let ((line (presentation-object record)))
-    (line-point-between-p (make-mutable-point x y)
+    (line-point-between-p (make-paint-point x y)
                           (line-start-point line)
                           (line-end-point line))))
 
@@ -272,7 +279,7 @@
   "Returns a point with x and y values of the stream-pointer-position
 of pane."
   (multiple-value-bind (x y) (stream-pointer-position pane)
-    (make-mutable-point x y)))
+    (make-paint-point x y)))
 
 ;;
 ;; dragging-output doesn't support the feedback arg. No reason it
@@ -378,10 +385,11 @@ of pane."
                                     6
                                     :ink ink :filled t)
                       (connect-neighbors point))))))
-          (with-accessors ((x1 point-x) (y1 point-y)) point
+          (with-accessors ((x1 point-x) (y1 point-y) (%p %point)) point
             (progn
-              (setf x1 (+ x1 (- x startx)))
-              (setf y1 (+ y1 (- y starty))))))))))
+              ;; FIXME! Need a better API here.
+              (setf %p (make-point (+ x1 (- x startx))
+                                   (+ y1 (- y starty)))))))))))
 
 (define-clim-paint-command (com-move-point)
     ((presentation presentation))
@@ -417,7 +425,7 @@ of list. Returns the (destructively) modified list."
   (with-accessors ((shapes shapes))
       *application-frame*
     (when (and x y)
-      (let ((point (make-mutable-point (max x 0)
+      (let ((point (make-paint-point (max x 0)
                                        (max y 0))))
         (if previous-point
             (progn
@@ -432,7 +440,7 @@ of list. Returns the (destructively) modified list."
   (with-accessors ((shapes shapes))
       *application-frame*
     (when (and point1 point2)
-      (let ((line (make-mutable-line point1 point2)))
+      (let ((line (make-paint-line point1 point2)))
         (push line shapes)))))
 
 (define-clim-paint-command (com-drag-add-point)
@@ -573,13 +581,14 @@ of list. Returns the (destructively) modified list."
                                       :ink *drag-color*))))))))
           (let ((p1 (line-start-point line))
                 (p2 (line-end-point line)))
-            (with-accessors ((x1 point-x) (y1 point-y)) p1
-              (with-accessors ((x2 point-x) (y2 point-y)) p2
+            (with-accessors ((x1 point-x) (y1 point-y) (%p1 %point)) p1
+              (with-accessors ((x2 point-x) (y2 point-y) (%p2 %point)) p2
                 (progn
-                  (setf x1 (+ x1 (- x startx)))
-                  (setf y1 (+ y1 (- y starty)))
-                  (setf x2 (+ x2 (- x startx)))
-                  (setf y2 (+ y2 (- y starty))))))))))))
+                  ;; FIXME!!
+                  (setf %p1 (make-point (+ x1 (- x startx))
+                                        (+ y1 (- y starty))))
+                  (setf %p2 (make-point (+ x2 (- x startx))
+                                        (+ y2 (- y starty))))x)))))))))
 
 (define-clim-paint-command (com-move-line)
     ((presentation t))
