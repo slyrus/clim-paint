@@ -29,7 +29,7 @@
 
 ;;;
 ;;; paint lines
-(defclass paint-line (line)
+(defclass paint-line (paint-object)
   ((p1 :type paint-point :initarg :p1)
    (p2 :type paint-point :initarg :p2)))
 
@@ -144,7 +144,9 @@
 ;;;
 ;;; clim-paint frame
 (define-application-frame clim-paint ()
-  ((shapes :initform (list (make-paint-point 100 100 :ink +blue+)) :accessor shapes)
+  ((shapes :initform (list (make-paint-point 10 20 :ink +red+)
+                           (make-paint-point 30 20 :ink +green+)
+                           (make-paint-point 50 20 :ink +blue+)) :accessor shapes)
    (ink :initform +blue+ :accessor ink))
   (:menu-bar clim-paint-menubar)
   (:panes
@@ -203,7 +205,7 @@
     (present object
              'paint-point
              :record-type 'point-presentation :single-box t))
-  (:method ((object line))
+  (:method ((object paint-line))
     (present object
              'paint-line
              :record-type 'line-presentation :single-box nil)))
@@ -458,9 +460,12 @@ of list. Returns the (destructively) modified list."
                                      (max y 0)
                                      :ink (or ink default-ink))))
         (if previous-point
-            (progn
+            (let ((line-ink (or ink
+                                (ink previous-point)
+                                default-ink)))
               (insert-before point previous-point shapes)
-              (com-add-line point previous-point))
+              (apply #'com-add-line point previous-point
+                     (when ink `(:ink ,line-ink))))
             (push point shapes))
         point))))
 
@@ -484,7 +489,11 @@ of list. Returns the (destructively) modified list."
       (multiple-value-bind (x y)
           (dragging-output (pane :finish-on-release t)
             (draw-circle pane (get-pointer-position pane) 6 :ink ink :filled t))
-        (com-add-point x y :previous-point old-point)))))
+        (let ((ink (when old-point (ink old-point))))
+          (apply #'com-add-point x y
+                 (append
+                  (when old-point `(:previous-point ,old-point))
+                  (when ink `(:ink ,ink)))))))))
 
 (define-gesture-name add-point-gesture :pointer-button (:left :control))
 
