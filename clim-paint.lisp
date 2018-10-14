@@ -67,8 +67,6 @@
     p2))
 
 ;;;
-;;; wrapped ellipse
-;;;
 ;;; we want an ellipse object that we can modify but the
 ;;; standard-ellipse is impaint and itself is a subclass of
 ;;; elliptical-thing. The problem with elliptical-thiing is that it
@@ -84,7 +82,35 @@
    (radius-2-dx :initarg :radius-2-dx :accessor radius-2-dx)
    (radius-2-dy :initarg :radius-2-dy :accessor radius-2-dy)
    (start-angle :initarg :start-angle :accessor start-angle)
-   (end-angle :initarg :end-angle :accessor end-angle)))
+   (end-angle :initarg :end-angle :accessor end-angle)
+   (ellipse :accessor %ellipse)))
+
+(defmethod shared-initialize :after ((ellipse paint-ellipse) slot-names
+                                     &key center-point
+		                          radius-1-dx radius-1-dy
+		                          radius-2-dx radius-2-dy
+                                          start-angle end-angle)
+  (setf (%point ellipse) (apply #'make-ellipse center-point
+		           radius-1-dx radius-1-dy
+		           radius-2-dx radius-2-dy
+		           (append
+                            (when start-angle
+                              `(:start-angle ,start-angle))
+                            (when end-angle
+                              `(:end-angle ,end-angle))))))
+
+(defun make-point-ellipse (center-point
+		           radius-1-dx radius-1-dy
+		           radius-2-dx radius-2-dy
+		           &key start-angle end-angle)
+  (make-instance 'paint-ellipse
+                 :center-point center-point
+                 :radius-1-dx radius-1-dx
+                 :radius-1-dy radius-1-dy
+	         :radius-2-dx radius-2-dx
+                 :radius-2-dy radius-2-dy
+                 :start-angle start-angle
+                 :end-angle end-angle))
 
 ;;;
 ;;; some special variables to be used for drawing/dragging
