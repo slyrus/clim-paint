@@ -92,27 +92,11 @@
    (radius-1-dy :initarg :radius-1-dy :accessor radius-1-dy)
    (radius-2-dx :initarg :radius-2-dx :accessor radius-2-dx)
    (radius-2-dy :initarg :radius-2-dy :accessor radius-2-dy)
-   (start-angle :initarg :start-angle :accessor start-angle)
-   (end-angle :initarg :end-angle :accessor end-angle)
-   (filled :initarg :filled :accessor filledp)
-   (ellipse :accessor %ellipse)))
+   (start-angle :initarg :start-angle :accessor start-angle :initform 0)
+   (end-angle :initarg :end-angle :accessor end-angle :initform (* pi 2))
+   (filled :initarg :filled :accessor filledp :initform nil)))
 
-(defmethod shared-initialize :after ((ellipse paint-ellipse) slot-names
-                                     &key center-point
-		                          radius-1-dx radius-1-dy
-		                          radius-2-dx radius-2-dy
-                                          start-angle end-angle)
-  (setf (%point ellipse)
-        (apply #'make-ellipse center-point
-	       radius-1-dx radius-1-dy
-	       radius-2-dx radius-2-dy
-	       (append
-                (when start-angle
-                  `(:start-angle ,start-angle))
-                (when end-angle
-                  `(:end-angle ,end-angle))))))
-
-(defun make-point-ellipse (center-point
+(defun make-paint-ellipse (center-point
 		           radius-1-dx radius-1-dy
 		           radius-2-dx radius-2-dy
 		           &key (start-angle nil start-angle-supplied-p)
@@ -146,7 +130,12 @@
 (define-application-frame clim-paint ()
   ((shapes :initform (list (make-paint-point 10 20 :ink +red+)
                            (make-paint-point 30 20 :ink +green+)
-                           (make-paint-point 50 20 :ink +blue+)) :accessor shapes)
+                           (make-paint-point 50 20 :ink +blue+)
+                           (make-paint-ellipse (make-paint-point 100 100 :ink +orange+)
+                                               10 30 40 15
+                                               :ink +orange+
+                                               :filled t))
+           :accessor shapes)
    (ink :initform +blue+ :accessor ink))
   (:menu-bar clim-paint-menubar)
   (:panes
@@ -191,6 +180,36 @@
                :ink ink)))
 
 ;;;
+;;; ellipses
+(defclass ellipse-presentation (standard-presentation) ())
+
+(define-presentation-type ellipse-presentation ()
+  :inherit-from 'paint-ellipse)
+
+(define-presentation-method present (ellipse (type paint-ellipse) pane
+                                          (view clim-paint-view) &key)
+  (with-accessors ((center-point center-point)
+                   (radius-1-dx radius-1-dx)
+                   (radius-1-dy radius-1-dy)
+                   (radius-2-dx radius-2-dx)
+                   (radius-2-dy radius-2-dy)
+                   (start-angle start-angle)
+                   (end-angle end-angle)
+                   (filledp filledp)
+                   (ink ink))
+      ellipse
+    (with-accessors ((point %point))
+        center-point
+      (draw-ellipse pane
+                    point
+                    radius-1-dx radius-1-dy
+                    radius-2-dx radius-2-dy
+                    :start-angle start-angle
+                    :end-angle end-angle
+                    :filled filledp
+                    :ink ink))))
+
+;;;
 ;;; HACK ALERT!
 ;;;
 ;;; This present* method feels like a hack. It would be great if there
@@ -208,7 +227,11 @@
   (:method ((object paint-line))
     (present object
              'paint-line
-             :record-type 'line-presentation :single-box nil)))
+             :record-type 'line-presentation :single-box nil))
+  (:method ((object paint-ellipse))
+    (present object
+             'paint-ellipse
+             :record-type 'ellipse-presentation :single-box nil)))
 
 ;;;
 ;;; main display function
@@ -328,8 +351,7 @@ of pane."
               (,feedback-fn
                (lambda
                    (record stream initial-x initial-y x y event)
-                 (with-accessors ((ink ink)
-                                  (shapes shapes))
+                 (with-accessors ((shapes shapes))
                      *application-frame*)
                  (multiple-value-bind (record-x record-y)
                      (output-record-position record)
@@ -376,49 +398,50 @@ of pane."
 
 (define-clim-paint-command (com-drag-move-point)
     ((paint-point paint-point))
-  (with-accessors ((shapes shapes)
-                   (ink ink))
+  (with-accessors ((shapes shapes))
       *application-frame*
-    (let ((pane (get-frame-pane *application-frame* 'app)))
-      (multiple-value-bind (startx starty)
-          (stream-pointer-position pane)
-        (multiple-value-bind (x y)
-            (dragging-output*
-                (pane :finish-on-release t)
-              (lambda (stream x y)
-                (flet ((connect-neighbors (paint-point)
-                         (let ((neighbors
-                                (find-lines-containing paint-point shapes)))
-                           (loop for other-line in neighbors
-                              do (let ((other-paint-point
-                                        (if (eq (line-start-point other-line) paint-point)
-                                            (line-end-point other-line)
-                                            (line-start-point other-line))))
-                                   (multiple-value-bind (nx1 ny1)
-                                       (point-position paint-point)
-                                     (multiple-value-bind (nx2 ny2)
-                                         (point-position other-paint-point)
-                                       (draw-line* stream
-                                                   (+ nx1 (- x startx))
-                                                   (+ ny1 (- y starty))
-                                                   nx2
-                                                   ny2
-                                                   :line-thickness 4
-                                                   :ink *drag-color*))))))))
-                  (with-output-to-output-record (stream)
-                    (multiple-value-bind (x1 y1)
-                        (point-position paint-point)
-                      (draw-circle* stream
-                                    (+ x1 (- x startx))
-                                    (+ y1 (- y starty))
-                                    6
-                                    :ink ink :filled t)
-                      (connect-neighbors paint-point))))))
-          ;; FIXME! probably want a better API here
-          (with-accessors ((point %point)) paint-point
-            (with-accessors ((x1 point-x) (y1 point-y) (%p %point)) point
-              (setf point (make-point (+ x1 (- x startx))
-                                      (+ y1 (- y starty)))))))))))
+    (with-accessors ((ink ink))
+      paint-point
+      (let ((pane (get-frame-pane *application-frame* 'app)))
+        (multiple-value-bind (startx starty)
+            (stream-pointer-position pane)
+          (multiple-value-bind (x y)
+              (dragging-output*
+                  (pane :finish-on-release t)
+                (lambda (stream x y)
+                  (flet ((connect-neighbors (paint-point)
+                           (let ((neighbors
+                                  (find-lines-containing paint-point shapes)))
+                             (loop for other-line in neighbors
+                                do (let ((other-paint-point
+                                          (if (eq (line-start-point other-line) paint-point)
+                                              (line-end-point other-line)
+                                              (line-start-point other-line))))
+                                     (multiple-value-bind (nx1 ny1)
+                                         (point-position paint-point)
+                                       (multiple-value-bind (nx2 ny2)
+                                           (point-position other-paint-point)
+                                         (draw-line* stream
+                                                     (+ nx1 (- x startx))
+                                                     (+ ny1 (- y starty))
+                                                     nx2
+                                                     ny2
+                                                     :line-thickness 4
+                                                     :ink *drag-color*))))))))
+                    (with-output-to-output-record (stream)
+                      (multiple-value-bind (x1 y1)
+                          (point-position paint-point)
+                        (draw-circle* stream
+                                      (+ x1 (- x startx))
+                                      (+ y1 (- y starty))
+                                      6
+                                      :ink ink :filled t)
+                        (connect-neighbors paint-point))))))
+            ;; FIXME! probably want a better API here
+            (with-accessors ((point %point)) paint-point
+              (with-accessors ((x1 point-x) (y1 point-y) (%p %point)) point
+                (setf point (make-point (+ x1 (- x startx))
+                                        (+ y1 (- y starty))))))))))))
 
 (define-clim-paint-command (com-move-point)
     ((presentation presentation))
@@ -570,72 +593,73 @@ of list. Returns the (destructively) modified list."
 
 (define-clim-paint-command (com-drag-move-line)
     ((line paint-line))
-  (with-accessors ((shapes shapes)
-                   (ink ink))
+  (with-accessors ((shapes shapes))
       *application-frame*
-    (let ((pane (get-frame-pane *application-frame* 'app)))
-      (multiple-value-bind (startx starty)
-          (stream-pointer-position pane)
-        (multiple-value-bind (x y)
-            (dragging-output*
-                (pane :finish-on-release t)
-              (lambda (stream x y)
-                (flet ((connect-neighbors (paint-point)
-                         (let ((neighbors
-                                (remove line (find-lines-containing paint-point shapes))))
-                           (loop for other-line in neighbors
-                              do (let ((other-paint-point
-                                        (if (eq (line-start-point other-line) paint-point)
-                                            (line-end-point other-line)
-                                            (line-start-point other-line))))
-                                   (multiple-value-bind (nx1 ny1)
-                                       (point-position paint-point)
-                                     (multiple-value-bind (nx2 ny2)
-                                         (point-position other-paint-point)
-                                       (draw-line* stream
-                                                   (+ nx1 (- x startx))
-                                                   (+ ny1 (- y starty))
-                                                   nx2
-                                                   ny2
-                                                   :line-thickness 4
-                                                   :ink *drag-color*))))))))
-                  (with-output-to-output-record (stream)
-                    (let ((paint-point-1 (line-start-point line))
-                          (paint-point-2 (line-end-point line)))
-                      (multiple-value-bind (x1 y1)
-                          (point-position paint-point-1)
-                        (multiple-value-bind (x2 y2)
-                            (point-position paint-point-2)
-                          (draw-circle* stream
+    (with-accessors ((ink ink))
+        line
+      (let ((pane (get-frame-pane *application-frame* 'app)))
+        (multiple-value-bind (startx starty)
+            (stream-pointer-position pane)
+          (multiple-value-bind (x y)
+              (dragging-output*
+                  (pane :finish-on-release t)
+                (lambda (stream x y)
+                  (flet ((connect-neighbors (paint-point)
+                           (let ((neighbors
+                                  (remove line (find-lines-containing paint-point shapes))))
+                             (loop for other-line in neighbors
+                                do (let ((other-paint-point
+                                          (if (eq (line-start-point other-line) paint-point)
+                                              (line-end-point other-line)
+                                              (line-start-point other-line))))
+                                     (multiple-value-bind (nx1 ny1)
+                                         (point-position paint-point)
+                                       (multiple-value-bind (nx2 ny2)
+                                           (point-position other-paint-point)
+                                         (draw-line* stream
+                                                     (+ nx1 (- x startx))
+                                                     (+ ny1 (- y starty))
+                                                     nx2
+                                                     ny2
+                                                     :line-thickness 4
+                                                     :ink *drag-color*))))))))
+                    (with-output-to-output-record (stream)
+                      (let ((paint-point-1 (line-start-point line))
+                            (paint-point-2 (line-end-point line)))
+                        (multiple-value-bind (x1 y1)
+                            (point-position paint-point-1)
+                          (multiple-value-bind (x2 y2)
+                              (point-position paint-point-2)
+                            (draw-circle* stream
+                                          (+ x1 (- x startx))
+                                          (+ y1 (- y starty))
+                                          6
+                                          :ink ink :filled t)
+                            (draw-circle* stream
+                                          (+ x2 (- x startx))
+                                          (+ y2 (- y starty))
+                                          6
+                                          :ink ink :filled t)
+                            (connect-neighbors paint-point-1)
+                            (connect-neighbors paint-point-2)
+                            (draw-line* stream
                                         (+ x1 (- x startx))
                                         (+ y1 (- y starty))
-                                        6
-                                        :ink ink :filled t)
-                          (draw-circle* stream
                                         (+ x2 (- x startx))
                                         (+ y2 (- y starty))
-                                        6
-                                        :ink ink :filled t)
-                          (connect-neighbors paint-point-1)
-                          (connect-neighbors paint-point-2)
-                          (draw-line* stream
-                                      (+ x1 (- x startx))
-                                      (+ y1 (- y starty))
-                                      (+ x2 (- x startx))
-                                      (+ y2 (- y starty))
-                                      :line-thickness 4
-                                      :ink *drag-color*))))))))
-          (let ((paint-point-1 (line-start-point line))
-                (paint-point-2 (line-end-point line)))
-            ;; FIXME! probably want a better API here
-            (with-accessors ((p1 %point)) paint-point-1
-              (with-accessors ((x1 point-x) (y1 point-y)) p1
-                (setf p1 (make-point (+ x1 (- x startx))
-                                     (+ y1 (- y starty))))
-                (with-accessors ((p2 %point)) paint-point-2
-                  (with-accessors ((x2 point-x) (y2 point-y)) p2
-                    (setf p2 (make-point (+ x2 (- x startx))
-                                         (+ y2 (- y starty))))))))))))))
+                                        :line-thickness 4
+                                        :ink *drag-color*))))))))
+            (let ((paint-point-1 (line-start-point line))
+                  (paint-point-2 (line-end-point line)))
+              ;; FIXME! probably want a better API here
+              (with-accessors ((p1 %point)) paint-point-1
+                (with-accessors ((x1 point-x) (y1 point-y)) p1
+                  (setf p1 (make-point (+ x1 (- x startx))
+                                       (+ y1 (- y starty))))
+                  (with-accessors ((p2 %point)) paint-point-2
+                    (with-accessors ((x2 point-x) (y2 point-y)) p2
+                      (setf p2 (make-point (+ x2 (- x startx))
+                                           (+ y2 (- y starty)))))))))))))))
 
 (define-clim-paint-command (com-move-line)
     ((presentation t))
