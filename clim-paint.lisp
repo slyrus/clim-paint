@@ -2,12 +2,18 @@
 (in-package :clim-paint)
 
 (defclass paint-object ()
-  ((ink :initarg :ink :accessor ink)))
+  ((ink :initarg :ink :accessor ink)
+   (filled :initarg :filled :accessor filledp)))
 
 ;;;
 ;;; paint points
 (defclass paint-point (paint-object)
   ((point :type point :initarg point :accessor %point)))
+
+(defgeneric paint-point-p (object)
+  (:method ((object t)) nil)
+  (:method ((object paint-point)) t)
+  (:documentation "Checking for class paint-point"))
 
 (defmethod point-position ((point paint-point))
   (point-position (%point point)))
@@ -22,16 +28,16 @@
          (when ink
            `(:ink ,ink))))
 
-(defgeneric paint-point-p (object)
-  (:method ((object t)) nil)
-  (:method ((object paint-point)) t)
-  (:documentation "Checking for class paint-point"))
-
 ;;;
 ;;; paint lines
 (defclass paint-line (paint-object)
   ((p1 :type paint-point :initarg :p1)
    (p2 :type paint-point :initarg :p2)))
+
+(defgeneric paint-line-p (object)
+  (:method ((object t)) nil)
+  (:method ((object paint-line)) t)
+  (:documentation "Checking for class paint-line"))
 
 (defun make-paint-line (start-point end-point &key ink)
   (apply #'make-instance 'paint-line :p1 start-point :p2 end-point
@@ -78,6 +84,36 @@
     p2))
 
 ;;;
+;;; rectangle
+(defclass paint-rectangle (paint-object)
+  ((rectangle :type rectangle :initarg rectangle :accessor %rectangle)))
+
+(defmethod shared-initialize :after ((rectangle paint-rectangle) slot-names &key x1 y1 x2 y2)
+  (setf (%rectangle rectangle) (make-rectangle* x1 y1 x2 y2)))
+
+(defgeneric paint-rectangle-p (object)
+  (:method ((object t)) nil)
+  (:method ((object paint-rectangle)) t)
+  (:documentation "Checking for class paint-rectangle"))
+
+(defun make-paint-rectangle (x1 y1 x2 y2 &key (ink nil ink-supplied-p)
+                                              (filled nil filled-supplied-p))
+  (apply #'make-instance 'paint-rectangle
+         :x1 (coerce x1 'coordinate)
+         :y1 (coerce y1 'coordinate)
+         :x2 (coerce x2 'coordinate)
+         :y2 (coerce y2 'coordinate)
+         (append
+          (when ink-supplied-p
+            `(:ink ,ink))
+          (when filled-supplied-p
+            `(:filled ,filled)))))
+
+(defmethod bounding-rectangle* ((object paint-rectangle))
+  (bounding-rectangle* (%rectangle object)))
+
+
+;;;
 ;;; we want an ellipse object that we can modify but the
 ;;; standard-ellipse is impaint and itself is a subclass of
 ;;; elliptical-thing. The problem with elliptical-thiing is that it
@@ -95,6 +131,11 @@
    (start-angle :initarg :start-angle :accessor start-angle :initform 0)
    (end-angle :initarg :end-angle :accessor end-angle :initform (* pi 2))
    (filled :initarg :filled :accessor filledp :initform nil)))
+
+(defgeneric paint-ellipse-p (object)
+  (:method ((object t)) nil)
+  (:method ((object paint-ellipse)) t)
+  (:documentation "Checking for class paint-ellipse"))
 
 (defun make-paint-ellipse (center-point
 		           radius-1-dx radius-1-dy
@@ -131,9 +172,14 @@
   ((shapes :initform (list (make-paint-point 10 20 :ink +red+)
                            (make-paint-point 30 20 :ink +green+)
                            (make-paint-point 50 20 :ink +blue+)
+                           (make-paint-rectangle 50 160 100 200 :ink +pink+ :filled t)
                            (make-paint-ellipse (make-paint-point 100 100 :ink +orange+)
                                                10 30 40 15
                                                :ink +orange+
+                                               :filled t)
+                           (make-paint-ellipse (make-paint-point 250 100 :ink +orange+)
+                                               30 0 0 40
+                                               :ink +brown+
                                                :filled t))
            :accessor shapes)
    (ink :initform +blue+ :accessor ink))
@@ -178,6 +224,25 @@
                (line-start-point line)
                (line-end-point line)
                :ink ink)))
+
+;;;
+;;; rectangles
+(defclass rectangle-presentation (standard-presentation) ())
+
+(define-presentation-type rectangle-presentation ()
+  :inherit-from 'paint-rectangle)
+
+(define-presentation-method present (rectangle (type paint-rectangle) pane
+                                          (view clim-paint-view) &key)
+  (with-accessors ((ink ink)
+                   (filled filledp))
+      rectangle
+    (multiple-value-bind (x1 y1 x2 y2)
+        (bounding-rectangle* rectangle)
+      (draw-rectangle* pane
+                       x1 y1 x2 y2
+                       :ink ink
+                       :filled filled))))
 
 ;;;
 ;;; ellipses
@@ -228,6 +293,10 @@
     (present object
              'paint-line
              :record-type 'line-presentation :single-box nil))
+  (:method ((object paint-rectangle))
+    (present object
+             'paint-rectangle
+             :record-type 'rectangle-presentation :single-box nil))
   (:method ((object paint-ellipse))
     (present object
              'paint-ellipse
@@ -240,15 +309,6 @@
   (with-accessors ((shapes shapes))
       frame
     (mapcar #'present* shapes)))
-
-(defun paint-point= (p1 p2)
-  (when (and (paint-point-p p1) (paint-point-p p2))
-    (multiple-value-bind (x1 y1)
-        (point-position p1)
-      (multiple-value-bind (x2 y2)
-          (point-position p2)
-        (and (= x1 x2)
-             (= y1 y2))))))
 
 (defun square (x)
   (* x x))
@@ -541,6 +601,15 @@ of list. Returns the (destructively) modified list."
                     (paint-point-p object)))
     (object presentation)
   (list presentation))
+
+(defun paint-point= (p1 p2)
+  (when (and (paint-point-p p1) (paint-point-p p2))
+    (multiple-value-bind (x1 y1)
+        (point-position p1)
+      (multiple-value-bind (x2 y2)
+          (point-position p2)
+        (and (= x1 x2)
+             (= y1 y2))))))
 
 (define-clim-paint-command (com-drag-split-line)
     ((line paint-line) (presentation presentation) (frame frame))
