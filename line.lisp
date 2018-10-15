@@ -67,8 +67,7 @@
 ;;; line-presentation
 (defclass line-presentation (standard-presentation) ())
 
-(define-presentation-type line-presentation ()
-  :inherit-from 'paint-line)
+(define-presentation-type line-presentation ())
 
 (define-presentation-method present (line (type paint-line) pane
                                           (view clim-paint-view) &key)
@@ -122,6 +121,7 @@
       (let ((line (make-paint-line point1 point2 :ink (or ink default-ink))))
         (push line shapes)))))
 
+;;; 2. com-drag-split-line
 (define-clim-paint-command (com-drag-split-line)
     ((line paint-line) (presentation presentation) (frame frame))
   (declare (ignore presentation))
@@ -147,7 +147,7 @@
             (com-add-line p1 new-point)
             (com-add-line p2 new-point)))))))
 
-;;; 2. com-split-line
+;;; 3. com-split-line
 (define-clim-paint-command (com-split-line)
     ((presentation t))
   (let ((line (presentation-object presentation)))
@@ -165,7 +165,7 @@
   (list presentation))
 
 
-;;; 3. com-drag-move-line
+;;; 4. com-drag-move-line
 (define-clim-paint-command (com-drag-move-line)
     ((line paint-line))
   (with-accessors ((shapes shapes))
@@ -235,7 +235,7 @@
                     (with-accessors ((x2 point-x) (y2 point-y)) p2
                       (setf p2 (make-point (+ x2 (- x startx))
                                            (+ y2 (- y starty)))))))))))))))
-;;; 4. com-move-line
+;;; 5. com-move-line
 (define-clim-paint-command (com-move-line)
     ((presentation t))
   (with-accessors ((shapes shapes))

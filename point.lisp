@@ -37,8 +37,7 @@
 ;;; point-presentation
 (defclass point-presentation (standard-presentation) ())
 
-(define-presentation-type point-presentation ()
-  :inherit-from 'paint-point)
+(define-presentation-type point-presentation ())
 
 (define-presentation-method present (object (type paint-point) pane
                                             (view clim-paint-view) &key)
