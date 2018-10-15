@@ -60,7 +60,6 @@
         (setf (stream-default-view stream)
               (or (stream-default-view pane)
                   (make-instance 'clim-paint-view)))
-        (break)
         (let ((*standard-output* stream))
           (with-accessors ((shapes shapes))
               frame

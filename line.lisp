@@ -16,26 +16,6 @@
   (apply #'make-instance 'paint-line :p1 start-point :p2 end-point
          (when ink `(:ink ,ink))))
 
-(defun make-paint-line* (start-x start-y end-x end-y &key ink)
-  (setf start-x (coerce start-x 'coordinate)
-        start-y (coerce start-y 'coordinate)
-        end-x (coerce end-x 'coordinate)
-        end-y (coerce end-y 'coordinate))
-  (if (and (= start-x end-x)
-           (= start-y end-y))
-      +nowhere+
-      (apply #'make-paint-line
-             (apply #'make-paint-point
-                    start-x start-y
-                    (when ink
-                      `(:ink ,ink)))
-             (apply #'make-paint-point
-                    end-x end-y
-                    (when ink
-                      `(:ink ,ink)))
-             (when ink
-               `(:ink ,ink)))))
-
 (defmethod line-start-point* ((line paint-line))
   (with-slots (p1) line
     (with-slots (x y)
@@ -58,7 +38,7 @@
 
 (defun find-lines-containing (point shapes)
   (loop for shape in shapes
-     when (and (linep shape)
+     when (and (paint-line-p shape)
                (or (eq point (line-start-point shape))
                    (eq point (line-end-point shape))))
      collect shape))
