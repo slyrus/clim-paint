@@ -116,7 +116,7 @@
         (let ((p1 (find (line-start-point line) shapes :test 'paint-point=))
               (p2 (find (line-end-point line) shapes :test 'paint-point=)))
           (setf shapes (delete-if (lambda (x)
-                                    (and (linep x)
+                                    (and (paint-line-p x)
                                          (or
                                           (and (paint-point= (line-start-point x) p1)
                                                (paint-point= (line-end-point x) p2))
