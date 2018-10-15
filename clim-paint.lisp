@@ -78,7 +78,7 @@
 ;;; the actual application
 (defvar *clim-paint-app*)
 
-(defparameter *default-shapes*
+(defun make-default-shapes ()
   (list (make-paint-point 10 20 :ink +red+)
         (make-paint-point 30 20 :ink +green+)
         (make-paint-point 50 20 :ink +blue+)
@@ -92,10 +92,9 @@
                             :ink +brown+
                             :filled t)))
 
-
 (defun clim-paint (&key (new-process t))
   (flet ((run ()
-           (let ((frame (make-application-frame 'clim-paint :shapes *default-shapes*)))
+           (let ((frame (make-application-frame 'clim-paint :shapes (make-default-shapes))))
              (setf *clim-paint-app* frame)
              (run-frame-top-level frame))))
     (if new-process
