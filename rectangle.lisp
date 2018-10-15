@@ -64,7 +64,9 @@
                           (- y1 *rectangle-highlight-margin* 1)
                           (+ x2 *rectangle-highlight-margin*)
                           (+ y2 *rectangle-highlight-margin*)
-                          :ink *highlight-color* :filled nil)))
+                          :ink *highlight-color*
+                          :filled nil
+                          :line-thickness *rectangle-highlight-margin*)))
       (:unhighlight
        (queue-repaint
         stream
@@ -75,10 +77,10 @@
                   (sheet-native-transformation stream)
                   (multiple-value-bind (x1 y1 x2 y2)
                       (bounding-rectangle* record)
-                    (make-rectangle* (- x1 *rectangle-highlight-margin* 1)
-                                     (- y1 *rectangle-highlight-margin* 1)
-                                     (+ x2 *rectangle-highlight-margin* 1)
-                                     (+ y2 *rectangle-highlight-margin* 1))))))))))
+                    (make-rectangle* (- x1 *rectangle-highlight-margin* 2)
+                                     (- y1 *rectangle-highlight-margin* 2)
+                                     (+ x2 *rectangle-highlight-margin* 2)
+                                     (+ y2 *rectangle-highlight-margin* 2))))))))))
 ;;; 1. com-drag-move-rectangle
 (define-clim-paint-command (com-drag-move-rectangle)
     ((paint-rectangle paint-rectangle))
