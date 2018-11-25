@@ -81,6 +81,10 @@
 
 ;;;
 ;;; refined-position test
+;;;
+;;; In theory we could check to see if this is a filled ellipse and,
+;;; if not, only hit the ellipse if we're on the perimeter, but for
+;;; the moment we don't do that.
 (define-presentation-method presentation-refined-position-test
     ((type paint-ellipse) (record ellipse-presentation) x y)
   (let ((ellipse (presentation-object record)))
