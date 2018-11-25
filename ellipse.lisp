@@ -162,7 +162,8 @@
                                    (start-angle start-angle)
                                    (end-angle end-angle)
                                    (filledp filledp)
-                                   (ink ink))
+                                   (ink ink)
+                                   (line-thickness line-thickness))
                       paint-ellipse
                     (multiple-value-bind (x1 y1)
                         (point-position center-point)
@@ -176,7 +177,8 @@
                                      :start-angle start-angle
                                      :end-angle end-angle
                                      :ink ink
-                                     :filled filled))))))
+                                     :filled filled
+                                     :line-thickness line-thickness))))))
           ;; FIXME! probably want a better API here
           (with-accessors ((center-point center-point))
               paint-ellipse
