@@ -89,7 +89,12 @@
         (make-paint-ellipse (make-paint-point 250 100 :ink +orange+)
                             30 0 0 40
                             :ink +brown+
-                            :filled t)))
+                            :filled t)
+        (make-paint-ellipse (make-paint-point 125 200)
+                            150 -90 60 25
+                            :ink +green+
+                            :line-thickness 5
+                            :filled nil)))
 
 (defun clim-paint (&key (new-process t))
   (flet ((run ()
