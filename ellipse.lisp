@@ -80,6 +80,29 @@
               (when line-thickness `(:line-thickness ,line-thickness)))))))
 
 ;;;
+;;; refined-position test
+(define-presentation-method presentation-refined-position-test
+    ((type paint-ellipse) (record ellipse-presentation) x y)
+  (let ((ellipse (presentation-object record)))
+    (with-accessors ((center-point center-point)
+                     (radius-1-dx radius-1-dx)
+                     (radius-1-dy radius-1-dy)
+                     (radius-2-dx radius-2-dx)
+                     (radius-2-dy radius-2-dy)
+                     (start-angle start-angle)
+                     (end-angle end-angle))
+        ellipse
+      (multiple-value-bind (center-x center-y)
+          (point-position center-point)
+        (region-contains-position-p
+         (make-ellipse* center-x center-y
+                        radius-1-dx radius-1-dy
+                        radius-2-dx radius-2-dy
+                        :start-angle start-angle
+                        :end-angle end-angle)
+         x y)))))
+
+;;;
 ;;; highlighting
 (defparameter *ellipse-highlight-margin* 6)
 (defparameter *ellipse-highlight-thickness* 2)
