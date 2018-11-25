@@ -18,6 +18,7 @@
    (radius-2-dy :initarg :radius-2-dy :accessor radius-2-dy)
    (start-angle :initarg :start-angle :accessor start-angle :initform 0)
    (end-angle :initarg :end-angle :accessor end-angle :initform (* pi 2))
+   (line-thickness :initarg :line-thickness :accessor line-thickness :initform 1)
    (filled :initarg :filled :accessor filledp :initform nil)))
 
 (defgeneric paint-ellipse-p (object)
@@ -31,7 +32,8 @@
 		           &key (start-angle nil start-angle-supplied-p)
                                 (end-angle nil end-angle-supplied-p)
                                 (ink nil ink-supplied-p)
-                                (filled nil filled-supplied-p))
+                                (filled nil filled-supplied-p)
+                                (line-thickness nil line-thickness-supplied-p))
   (apply #'make-instance 'paint-ellipse
                  :center-point center-point
                  :radius-1-dx radius-1-dx
@@ -42,7 +44,8 @@
                   (when start-angle-supplied-p `(:start-angle ,start-angle))
                   (when end-angle-supplied-p `(:end-angle ,end-angle))
                   (when ink-supplied-p `(:ink , ink))
-                  (when filled-supplied-p `(:filled ,filled)))))
+                  (when filled-supplied-p `(:filled ,filled))
+                  (when line-thickness-supplied-p `(:line-thickness ,line-thickness)))))
 
 ;;;
 ;;; ellipse-presentation
@@ -59,23 +62,27 @@
                    (radius-2-dy radius-2-dy)
                    (start-angle start-angle)
                    (end-angle end-angle)
+                   (line-thickness line-thickness)
                    (filledp filledp)
                    (ink ink))
       ellipse
     (multiple-value-bind (x1 y1)
         (point-position center-point)
-      (draw-ellipse* pane
-                     x1 y1
-                     radius-1-dx radius-1-dy
-                     radius-2-dx radius-2-dy
-                     :start-angle start-angle
-                     :end-angle end-angle
-                     :filled filledp
-                     :ink ink))))
+      (apply #'draw-ellipse* pane
+             x1 y1
+             radius-1-dx radius-1-dy
+             radius-2-dx radius-2-dy
+             :filled filledp
+             :ink ink
+             (append
+              (when start-angle `(:start-angle ,start-angle))
+              (when end-angle `(:end-angle ,end-angle))
+              (when line-thickness `(:line-thickness ,line-thickness)))))))
 
 ;;;
 ;;; highlighting
-(defparameter *ellipse-highlight-margin* 4)
+(defparameter *ellipse-highlight-margin* 6)
+(defparameter *ellipse-highlight-thickness* 2)
 
 (define-presentation-method highlight-presentation
     ((type paint-ellipse) (record ellipse-presentation) stream state)
@@ -94,17 +101,23 @@
            paint-ellipse
          (multiple-value-bind (x1 y1)
              (point-position center-point)
-           (draw-ellipse* stream
-                          x1 y1
-                          (+ radius-1-dx *ellipse-highlight-margin*)
-                          (+ radius-1-dy *ellipse-highlight-margin*)
-                          (+ radius-2-dx *ellipse-highlight-margin*)
-                          (+ radius-2-dy *ellipse-highlight-margin*)
-                          :line-thickness *ellipse-highlight-margin*
-                          :start-angle start-angle
-                          :end-angle end-angle
-                          :ink *highlight-color*
-                          :filled nil))))
+           (let ((theta1 (phase (complex radius-1-dy radius-1-dx)))
+                 (theta2 (phase (complex radius-2-dy radius-2-dx))))
+             (draw-ellipse* stream
+                            x1 y1
+                            (+ radius-1-dx (* *ellipse-highlight-margin*
+                                              (sin theta1)))
+                            (+ radius-1-dy (* *ellipse-highlight-margin*
+                                              (cos theta1)))
+                            (+ radius-2-dx (* *ellipse-highlight-margin*
+                                              (sin theta2)))
+                            (+ radius-2-dy (* *ellipse-highlight-margin*
+                                              (cos theta2)))
+                            :line-thickness *ellipse-highlight-thickness*
+                            :start-angle start-angle
+                            :end-angle end-angle
+                            :ink *highlight-color*
+                            :filled nil)))))
       (:unhighlight
        (queue-repaint
         stream
