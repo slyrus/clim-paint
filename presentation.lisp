@@ -23,47 +23,18 @@ of pane."
 ;; that takes a feedback arg.
 (locally
     (declare #+sbcl (sb-ext:muffle-conditions style-warning))
-  (defmacro dragging-output* ((&optional (stream *standard-output*) &rest args
-                                         &key (repaint t)
-                                         finish-on-release
-                                         multiple-window)
-                               &body body)
-    "An enhanced version of the clim:dragging-output macro. The
-original macro doesn't take a feedback function, but this one does and
-the feeedback function is then passed to drag-output-record. The
-feedback function is provided as the body in calls to this macro and
-must consist of a function that takes three arguments, the stream, and
-teh x and y position of the pointer, and returns an output record of
-the drawn feedback. This output record is inserted into the stream's
-current output-record upon drawing, and is subsequently removed upon
-erasing."
-    `(invoke-with-dragging-output* ,@body ,stream ,@args)))
-
-(locally
-    (declare #+sbcl (sb-ext:muffle-conditions style-warning))
   (defun invoke-with-dragging-output* (continuation
                                        &optional (stream *standard-output*)
                                        &rest args
                                        &key repaint
                                             finish-on-release
                                             multiple-window)
-    (declare (ignore repaint finish-on-release multiple-window))
+    (declare #+sbcl (sb-ext:unmuffle-conditions style-warning)
+             (ignore repaint finish-on-release multiple-window))
     (let ((record (with-output-to-output-record (stream))))
       (flet ((feedback-fn (record stream initial-x initial-y x y event)
-               (with-accessors ((shapes shapes))
-                   *application-frame*)
                (multiple-value-bind (record-x record-y)
                    (output-record-position record)
-                 #+(or)
-                 (let ((erase-final t))
-                   (finish-on-release t)
-                   (flet ((simple-erase ()
-                            (when erase-final
-                              (when (output-record-parent record)
-                                (delete-output-record record (output-record-parent record)))
-                              (climi::with-double-buffering
-                                  ((stream record) (buffer-rectangle))
-                                (stream-replay stream buffer-rectangle)))))))
                  (let ((dx (- record-x initial-x))
                        (dy (- record-y initial-y)))
                    (case event
@@ -73,7 +44,7 @@ erasing."
                         (when (output-record-parent record)
                           (delete-output-record record (output-record-parent record)))
                         (setf (output-record-position record)
-                              (values (+ dx x) (+  dy y)))
+                              (values (+ dx x) (+ dy y)))
                         (add-output-record (funcall continuation stream x y) record)
                         (stream-add-output-record stream record)
                         (with-bounding-rectangle* (new-x1 new-y1 new-x2 new-y2)
@@ -94,3 +65,24 @@ erasing."
                              (buffer-rectangle))
                           (stream-replay stream buffer-rectangle)))))))))
         (apply #'drag-output-record stream record :erase-final t :feedback #'feedback-fn args)))))
+
+(locally
+    (declare #+sbcl (sb-ext:muffle-conditions style-warning))
+  (defmacro dragging-output* ((&optional (stream *standard-output*) &rest args
+                                         &key (repaint t)
+                                         finish-on-release
+                                         multiple-window)
+                               &body body)
+    "An enhanced version of the clim:dragging-output macro. The
+original macro doesn't take a feedback function, but this one does and
+the feeedback function is then passed to drag-output-record. The
+feedback function is provided as the body in calls to this macro and
+must consist of a function that takes three arguments, the stream, and
+teh x and y position of the pointer, and returns an output record of
+the drawn feedback. This output record is inserted into the stream's
+current output-record upon drawing, and is subsequently removed upon
+erasing."
+    (declare #+sbcl (sb-ext:unmuffle-conditions style-warning)
+             (ignore repaint finish-on-release multiple-window))
+    `(invoke-with-dragging-output* ,@body ,stream ,@args)))
+
