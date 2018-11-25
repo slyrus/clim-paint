@@ -59,6 +59,15 @@
                :ink ink)))
 
 ;;;
+;;; refined-position test
+(define-presentation-method presentation-refined-position-test
+    ((type paint-line) (record line-presentation) x y)
+  (let ((line (presentation-object record)))
+    (line-point-between-p (make-point x y)
+                          (line-start-point line)
+                          (line-end-point line))))
+
+;;;
 ;;; highlighting
 (define-presentation-method highlight-presentation
     ((type paint-line) (record line-presentation) stream state)
@@ -100,14 +109,6 @@
                                   (sheet-native-transformation stream)
                                   record))))))))
 
-
-;;; position test
-(define-presentation-method presentation-refined-position-test
-    ((type paint-line) (record line-presentation) x y)
-  (let ((line (presentation-object record)))
-    (line-point-between-p (make-point x y)
-                          (line-start-point line)
-                          (line-end-point line))))
 
 ;;; commands
 
