@@ -9,4 +9,6 @@
 ;;; some special variables to be used for drawing/dragging
 (defparameter *highlight-color* +orange+)
 
+(defparameter *selection-color* +red+)
+
 (defparameter *drag-color* +green+)
