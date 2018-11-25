@@ -56,7 +56,9 @@
     (draw-line pane
                (line-start-point line)
                (line-end-point line)
-               :ink ink)))
+               :ink (if (gethash line *selected-object-hash*)
+                        *selection-color*
+                        ink))))
 
 ;;;
 ;;; refined-position test
@@ -98,8 +100,15 @@
         line
       (case state
         (:select
-         (draw-line stream start end
-                    :line-thickness 4 :ink *selection-color*))
+         (clrhash *selected-object-hash*)
+         (setf (gethash line *selected-object-hash*) t)
+         (queue-repaint
+          stream
+          (make-instance 'window-repaint-event
+                         :sheet stream
+                         :region (transform-region
+                                  (sheet-native-transformation stream)
+                                  record))))
         (:deselect
          (queue-repaint
           stream
@@ -239,10 +248,6 @@
                     (with-accessors ((x2 point-x) (y2 point-y)) p2
                       (setf p2 (make-point (+ x2 (- x startx))
                                            (+ y2 (- y starty)))))))))))))))
-(define-clim-paint-command (com-select-line)
-    ((presentation t))
-  (let ((line (presentation-object presentation)))
-    (funcall-presentation-generic-function select-presentation :select)))
 
 ;;; 5. com-move-line
 (define-clim-paint-command (com-move-line)
@@ -262,5 +267,4 @@
                    t))
     (object presentation)
   (list presentation))
-
 

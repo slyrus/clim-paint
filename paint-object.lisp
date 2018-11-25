@@ -12,3 +12,6 @@
 (defparameter *selection-color* +red+)
 
 (defparameter *drag-color* +green+)
+
+(defparameter *selected-object-hash* (make-hash-table))
+

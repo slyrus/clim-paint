@@ -13,6 +13,7 @@
                (:file "presentation")
                (:file "frame")
                (:file "paint-object")
+               (:file "selection")
                (:file "point")
                (:file "line")
                (:file "rectangle")
