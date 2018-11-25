@@ -86,3 +86,12 @@ erasing."
              (ignore repaint finish-on-release multiple-window))
     `(invoke-with-dragging-output* ,@body ,stream ,@args)))
 
+
+;; selection -- still a WIP
+(define-presentation-generic-function %select-presentation
+    select-presentation
+  (climi::type-key climi::parameters climi::options climi::type record stream state))
+
+(define-default-presentation-method select-presentation
+    (type record stream state)
+  (declare (ignore type record stream state)))

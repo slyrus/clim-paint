@@ -79,6 +79,29 @@
                                   (sheet-native-transformation stream)
                                   record))))))))
 
+;;;
+;;; selection
+(define-presentation-method select-presentation
+    ((type paint-line) (record line-presentation) stream state)
+  (let ((line (presentation-object record)))
+    (with-accessors ((start line-start-point)
+                     (end line-end-point))
+        line
+      (case state
+        (:select
+         (draw-line stream start end
+                    :line-thickness 4 :ink *selection-color*))
+        (:deselect
+         (queue-repaint
+          stream
+          (make-instance 'window-repaint-event
+                         :sheet stream
+                         :region (transform-region
+                                  (sheet-native-transformation stream)
+                                  record))))))))
+
+
+;;; position test
 (define-presentation-method presentation-refined-position-test
     ((type paint-line) (record line-presentation) x y)
   (let ((line (presentation-object record)))
@@ -215,6 +238,11 @@
                     (with-accessors ((x2 point-x) (y2 point-y)) p2
                       (setf p2 (make-point (+ x2 (- x startx))
                                            (+ y2 (- y starty)))))))))))))))
+(define-clim-paint-command (com-select-line)
+    ((presentation t))
+  (let ((line (presentation-object presentation)))
+    (funcall-presentation-generic-function select-presentation :select)))
+
 ;;; 5. com-move-line
 (define-clim-paint-command (com-move-line)
     ((presentation t))
