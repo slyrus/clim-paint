@@ -140,11 +140,12 @@
   (with-accessors ((ink ink)
                    (shapes shapes))
       frame
-    (let ((pane (get-frame-pane frame 'app)))
+    (let ((pane (get-frame-pane frame 'app))
+          (new-ink (or (ink line) ink)))
       (multiple-value-bind (x y)
           (dragging-output (pane :finish-on-release t)
             (draw-circle pane (get-pointer-position pane) 6
-                         :ink ink :filled t))
+                         :ink new-ink :filled t))
         (let ((p1 (find (line-start-point line) shapes :test 'paint-point=))
               (p2 (find (line-end-point line) shapes :test 'paint-point=)))
           (setf shapes (delete-if (lambda (x)
@@ -155,9 +156,9 @@
                                           (and (paint-point= (line-start-point x) p2)
                                                (paint-point= (line-end-point x) p1)))))
                                   shapes))
-          (let ((new-point (com-add-point x y)))
-            (com-add-line p1 new-point)
-            (com-add-line p2 new-point)))))))
+          (let ((new-point (com-add-point x y :ink new-ink)))
+            (com-add-line p1 new-point :ink new-ink)
+            (com-add-line p2 new-point :ink new-ink)))))))
 
 ;;; 3. com-split-line
 (define-clim-paint-command (com-split-line)
