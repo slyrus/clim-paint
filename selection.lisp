@@ -40,3 +40,16 @@
       (make-instance 'window-repaint-event
                      :sheet stream
                      :region +everywhere+)))))
+
+;;;
+;;; selection-handle-point-presentation
+(defclass selection-handle-point-presentation (standard-presentation) ())
+
+(define-presentation-type selection-handle-point-presentation ())
+
+(define-presentation-method present (object (type point) pane
+                                            (view clim-paint-view) &key)
+  (multiple-value-bind (x y)
+      object
+    (draw-circle* pane x y 6 :ink *selection-color* :filled t)))
+
