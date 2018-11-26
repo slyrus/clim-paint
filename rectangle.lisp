@@ -36,6 +36,28 @@
 
 (define-presentation-type rectangle-presentation ())
 
+(defparameter *rectangle-selection-width* 4)
+
+(defun draw-rectangle-selection (pane rectangle)
+  (multiple-value-bind (x1 y1 x2 y2)
+      (bounding-rectangle* rectangle)
+    (draw-rectangle* pane
+                     (if (>= x2 x1)
+                         (- x1 *rectangle-selection-width*)
+                         (+ x1 *rectangle-selection-width* -1))
+                     (if (>= y2 y1)
+                         (- y1 *rectangle-selection-width*)
+                         (+ y1 *rectangle-selection-width* -1))
+                     (if (>= x2 x1)
+                         (+ x2 *rectangle-selection-width* -1)
+                         (- x2 *rectangle-selection-width*))
+                     (if (>= y2 y1)
+                         (+ y2 *rectangle-selection-width* -1)
+                         (- y2 *rectangle-selection-width*))
+                     :ink *selection-color*
+                     :filled nil
+                     :line-dashes t)))
+
 (define-presentation-method present (rectangle (type paint-rectangle) pane
                                           (view clim-paint-view) &key)
   (with-accessors ((ink ink)
@@ -46,7 +68,9 @@
       (draw-rectangle* pane
                        x1 y1 x2 y2
                        :ink ink
-                       :filled filled))))
+                       :filled filled)))
+  (if (gethash rectangle *selected-object-hash*)
+        (draw-rectangle-selection pane rectangle)))
 
 ;;;
 ;;; highlighting

@@ -24,7 +24,16 @@
 (define-presentation-method select-presentation
     ((type paint-object) (record presentation) stream state)
   (case state
-    ((:select :deselect)
+    (:select
+     (clrhash *selected-object-hash*)
+     (let ((object (presentation-object record)))
+       (setf (gethash object *selected-object-hash*) t))
+     (queue-repaint
+      stream
+      (make-instance 'window-repaint-event
+                     :sheet stream
+                     :region +everywhere+)))
+    (:deselect
      (clrhash *selected-object-hash*)
      (queue-repaint
       stream

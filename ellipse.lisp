@@ -53,6 +53,39 @@
 
 (define-presentation-type ellipse-presentation ())
 
+(defparameter *ellipse-selection-width* 8)
+
+(defun draw-ellipse-selection (pane ellipse)
+  (with-accessors ((center-point center-point)
+                   (radius-1-dx radius-1-dx)
+                   (radius-1-dy radius-1-dy)
+                   (radius-2-dx radius-2-dx)
+                   (radius-2-dy radius-2-dy)
+                   (start-angle start-angle)
+                   (end-angle end-angle)
+                   (line-thickness line-thickness)
+                   (filledp filledp)
+                   (ink ink))
+      ellipse
+    (multiple-value-bind (x1 y1)
+        (point-position center-point)
+      (let ((theta1 (phase (complex radius-1-dy radius-1-dx)))
+            (theta2 (phase (complex radius-2-dy radius-2-dx))))
+        (draw-ellipse* pane
+                       x1 y1
+                       (+ radius-1-dx (* *ellipse-highlight-margin*
+                                         (sin theta1)))
+                       (+ radius-1-dy (* *ellipse-highlight-margin*
+                                         (cos theta1)))
+                       (+ radius-2-dx (* *ellipse-highlight-margin*
+                                         (sin theta2)))
+                       (+ radius-2-dy (* *ellipse-highlight-margin*
+                                         (cos theta2)))
+                       :ink *selection-color*
+                       :line-thickness 2
+                       :line-dashes t
+                       :filled nil)))))
+
 (define-presentation-method present (ellipse (type paint-ellipse) pane
                                              (view clim-paint-view) &key)
   (with-accessors ((center-point center-point)
@@ -77,7 +110,9 @@
              (append
               (when start-angle `(:start-angle ,start-angle))
               (when end-angle `(:end-angle ,end-angle))
-              (when line-thickness `(:line-thickness ,line-thickness)))))))
+              (when line-thickness `(:line-thickness ,line-thickness)))))
+    (if (gethash ellipse *selected-object-hash*)
+        (draw-ellipse-selection pane ellipse))))
 
 ;;;
 ;;; refined-position test

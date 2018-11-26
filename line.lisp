@@ -49,16 +49,44 @@
 
 (define-presentation-type line-presentation ())
 
+(defparameter *line-selection-width* 8)
+
+(defun draw-line-selection (pane line)
+  (with-accessors ((ink ink)
+                   (start line-start-point)
+                   (end line-end-point))
+      line
+    ;; draw a rectangle around line, say, 3 pixels wider on either side
+    (multiple-value-bind  (x1 y1)
+        (point-position start)
+      (multiple-value-bind  (x2 y2)
+          (point-position end)
+        (let ((theta (phase (complex (- y2 y1) (- x2 x1)))))
+          (let ((theta1a (- theta (* pi (/ 1 4))))
+                (theta1b (+ theta (* pi (/ 1 4)))))
+            (draw-polygon* pane
+                           (list (- x1 (* *line-selection-width* (sin theta1a)))
+                                 (- y1 (* *line-selection-width* (cos theta1a)))
+                                 (- x1 (* *line-selection-width* (sin theta1b)))
+                                 (- y1 (* *line-selection-width* (cos theta1b)))
+                                 (+ x2 (* *line-selection-width* (sin theta1a)))
+                                 (+ y2 (* *line-selection-width* (cos theta1a)))
+                                 (+ x2 (* *line-selection-width* (sin theta1b)))
+                                 (+ y2 (* *line-selection-width* (cos theta1b))))
+                           :ink *selection-color*
+                           :line-thickness 2
+                           :line-dashes t
+                           :filled nil)))))))
+
 (define-presentation-method present (line (type paint-line) pane
                                           (view clim-paint-view) &key)
-  (with-accessors ((ink ink))
+  (with-accessors ((ink ink)
+                   (start line-start-point)
+                   (end line-end-point))
       line
-    (draw-line pane
-               (line-start-point line)
-               (line-end-point line)
-               :ink (if (gethash line *selected-object-hash*)
-                        *selection-color*
-                        ink))))
+    (draw-line pane start end :ink ink)
+    (if (gethash line *selected-object-hash*)
+        (draw-line-selection pane line))))
 
 ;;;
 ;;; refined-position test
@@ -89,35 +117,6 @@
                          :region (transform-region
                                   (sheet-native-transformation stream)
                                   record))))))))
-
-;;;
-;;; selection
-(define-presentation-method select-presentation
-    ((type paint-line) (record line-presentation) stream state)
-  (let ((line (presentation-object record)))
-    (with-accessors ((start line-start-point)
-                     (end line-end-point))
-        line
-      (case state
-        (:select
-         (clrhash *selected-object-hash*)
-         (setf (gethash line *selected-object-hash*) t)
-         (queue-repaint
-          stream
-          (make-instance 'window-repaint-event
-                         :sheet stream
-                         :region (transform-region
-                                  (sheet-native-transformation stream)
-                                  record))))
-        (:deselect
-         (queue-repaint
-          stream
-          (make-instance 'window-repaint-event
-                         :sheet stream
-                         :region (transform-region
-                                  (sheet-native-transformation stream)
-                                  record))))))))
-
 
 ;;; commands
 
