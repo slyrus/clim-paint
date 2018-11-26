@@ -1,6 +1,32 @@
 
 (in-package :clim-paint)
 
+;;; selection handle
+(defclass selection-handle-object ()
+  ((ink :initarg :ink :accessor ink)
+   (line-thickness :initarg :line-thickness :accessor line-thickness)
+   (filled :initarg :filled :accessor filledp)))
+
+(defclass selection-handle-point (selection-handle-object)
+  ((point :type point :initarg :point :accessor %point)
+   (radius :initarg :radius :accessor radius)))
+
+;;;
+;;; selection-handle-point-presentation
+(defclass selection-handle-point-presentation (standard-presentation) ())
+
+(define-presentation-type selection-handle-point-presentation ())
+
+(define-presentation-method present (object (type selection-handle-point) pane
+                                            (view clim-paint-view)
+                                            &key)
+  (multiple-value-bind (x y)
+      (point-position (%point object))
+    (draw-circle* pane x y (radius object)
+                  :ink (ink object)
+                  :filled (filledp object)
+                  :line-thickness 2)))
+
 ;;; selection
 
 (define-clim-paint-command (com-select-object)
@@ -12,8 +38,17 @@
 
 (define-gesture-name select-gesture :pointer-button (:middle))
 
-(define-presentation-to-command-translator select-object-translator
+(define-presentation-to-command-translator select-paint-object-translator
     (paint-object com-select-object clim-paint
+                  :gesture select-gesture
+                  :menu nil
+                  :tester ((object)
+                           t))
+    (object presentation)
+  (list presentation))
+
+(define-presentation-to-command-translator select-selection-handle-object-translator
+    (selection-handle-object com-select-object clim-paint
                   :gesture select-gesture
                   :menu nil
                   :tester ((object)
@@ -40,29 +75,4 @@
       (make-instance 'window-repaint-event
                      :sheet stream
                      :region +everywhere+)))))
-
-;;; selection handle
-(defclass selection-handle-object ()
-  ((ink :initarg :ink :accessor ink)
-   (line-thickness :initarg :line-thickness :accessor line-thickness)
-   (filled :initarg :filled :accessor filledp)))
-
-(defclass selection-handle-point (selection-handle-object)
-  ((point :type point :initarg :point :accessor %point)
-   (radius :initarg :radius :accessor radius)))
-;;;
-;;; selection-handle-point-presentation
-(defclass selection-handle-point-presentation (standard-presentation) ())
-
-(define-presentation-type selection-handle-point-presentation ())
-
-(define-presentation-method present (object (type selection-handle-point) pane
-                                            (view clim-paint-view)
-                                            &key)
-  (multiple-value-bind (x y)
-      (point-position (%point object))
-    (draw-circle* pane x y (radius object)
-                  :ink (ink object)
-                  :filled (filledp object)
-                  :line-thickness 2)))
 

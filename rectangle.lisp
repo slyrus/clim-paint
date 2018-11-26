@@ -39,7 +39,7 @@
 (defparameter *rectangle-selection-width* 4)
 
 (defun draw-rectangle-selection (pane rectangle &key (ink +black+)
-                                                     (radius 4)
+                                                     (radius 8)
                                                      (filled nil))
   (multiple-value-bind (x1 y1 x2 y2)
       (bounding-rectangle* rectangle)
