@@ -39,13 +39,25 @@
 
 (define-presentation-type point-presentation ())
 
+(defparameter *point-selection-width* 10)
+
+(defun draw-point-selection (pane point)
+  (multiple-value-bind (x y)
+      (point-position point)
+    (draw-circle* pane x y *point-selection-width*
+                  :ink *selection-color*
+                  :filled nil
+                  :line-thickness 2)))
+
 (define-presentation-method present (object (type paint-point) pane
                                             (view clim-paint-view) &key)
   (multiple-value-bind (x y)
       (point-position object)
     (with-accessors ((ink ink))
         object
-      (draw-circle* pane x y 6 :ink ink :filled t))))
+      (draw-circle* pane x y 6 :ink ink :filled t)))
+  (if (gethash object *selected-object-hash*)
+      (draw-point-selection pane object)))
 
 ;;;
 ;;; highlighting
@@ -116,6 +128,7 @@
               (with-accessors ((x1 point-x) (y1 point-y) (%p %point)) point
                 (setf point (make-point (+ x1 (- x startx))
                                         (+ y1 (- y starty))))))))))))
+
 ;;; 2. com-move-point
 (define-clim-paint-command (com-move-point)
     ((presentation presentation))
