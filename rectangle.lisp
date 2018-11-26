@@ -209,14 +209,14 @@
 ;;; 4. com-move-rectangle-selection-handle
 (define-clim-paint-command (com-move-rectangle-selection-handle)
     ((presentation presentation))
-  (let ((rectangle (presentation-object presentation)))
+  (let ((rectangle (paint-object (presentation-object presentation))))
     (com-drag-move-rectangle-selection-handle rectangle)))
 
-(define-gesture-name move-rectangle-gesture :pointer-button (:left))
+(define-gesture-name move-rectangle-selection-handle-gesture :pointer-button (:middle :control))
 
 (define-presentation-to-command-translator move-rectangle-selection-handle-translator
-    (paint-rectangle com-move-rectangle-selection-handle clim-paint
-           :gesture move-rectangle-gesture
+    (selection-handle-point com-move-rectangle-selection-handle clim-paint
+           :gesture move-rectangle-selection-handle-gesture
            :menu nil
            :tester ((object presentation event)
                     (declare (ignore presentation event))
