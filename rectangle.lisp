@@ -63,19 +63,24 @@
                          :ink *selection-color*
                          :filled nil
                          :line-dashes t)
-        (map nil
-             (lambda (x)
-               (present (make-instance 'selection-handle-point
-                                       :paint-object rectangle
-                                       :point (apply #'make-point x)
-                                       :ink ink
-                                       :radius radius
-                                       :filled filled)
-                        'selection-handle-point
-                        :record-type 'selection-handle-point-presentation
-                        :single-box t))
-             (list (list sx1 sy1)
-                   (list sx2 sy2)))))))
+        (present (make-instance 'selection-handle-point
+                                :paint-object (cons rectangle (%point-1 rectangle))
+                                :point (make-point sx1 sy1)
+                                :ink ink
+                                :radius radius
+                                :filled filled)
+                 'selection-handle-point
+                 :record-type 'selection-handle-point-presentation
+                 :single-box t)
+        (present (make-instance 'selection-handle-point
+                                :paint-object (cons rectangle (%point-2 rectangle))
+                                :point (make-point sx2 sy2)
+                                :ink ink
+                                :radius radius
+                                :filled filled)
+                 'selection-handle-point
+                 :record-type 'selection-handle-point-presentation
+                 :single-box t)))))
 
 (define-presentation-method present (rectangle (type paint-rectangle) pane
                                           (view clim-paint-view) &key)
@@ -191,18 +196,15 @@
   (list presentation))
 
 ;; FIXME!!!
-(defun rectangle-other-point (rectangle x y)
-  (multiple-value-bind (x1 y1)
-      (point-position (%point-1 rectangle))
-    (multiple-value-bind (x2 y2)
-        (point-position (%point-2 rectangle))
-      (if (and (= x x1) (= y y1))
-          (values x2 y2)
-          (values x1 y1)))))
+(defun rectangle-other-point (rectangle point)
+  (if (eql (%point-1 rectangle) point)
+      (%point-2 rectangle)
+      (%point-1 rectangle)))
 
 (define-clim-paint-command (com-drag-move-rectangle-selection-handle)
     ((selection-handle-point selection-handle-point))
-  (let ((rectangle (paint-object selection-handle-point)))
+  (destructuring-bind (rectangle . my-point)
+      (paint-object selection-handle-point)
     (with-accessors ((ink ink)
                      (filled filledp))
         rectangle
@@ -210,9 +212,9 @@
         (multiple-value-bind (startx starty)
             (stream-pointer-position pane)
           (multiple-value-bind (near-x near-y)
-              (point-position (%point selection-handle-point))
+              (point-position my-point)
             (multiple-value-bind (other-x other-y)
-                (rectangle-other-point rectangle near-x near-y)
+                (point-position (rectangle-other-point rectangle my-point))
               (multiple-value-bind (x y)
                   (dragging-output*
                       (pane :finish-on-release t)
