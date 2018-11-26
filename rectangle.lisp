@@ -175,42 +175,43 @@
 
 
 (define-clim-paint-command (com-drag-move-rectangle-selection-handle)
-    ((paint-rectangle paint-rectangle))
-  (with-accessors ((ink ink)
-                   (filled filledp))
-      paint-rectangle
-    (let ((pane (get-frame-pane *application-frame* 'app)))
-      (multiple-value-bind (startx starty)
-          (stream-pointer-position pane)
-        (multiple-value-bind (x y)
-            (dragging-output*
-                (pane :finish-on-release t)
-              (lambda (stream x y)
-                (with-output-to-output-record (stream)
-                  (multiple-value-bind (x1 y1 x2 y2)
-                      (bounding-rectangle* paint-rectangle)
-                    (draw-rectangle* stream
-                                     (+ x1 (- x startx))
-                                     (+ y1 (- y starty))
-                                     (+ x2 (- x startx))
-                                     (+ y2 (- y starty))
-                                     :ink ink
-                                     :filled filled)))))
-          ;; FIXME! probably want a better API here
-          (with-accessors ((rectangle %rectangle)) paint-rectangle
-            (multiple-value-bind (x1 y1 x2 y2)
-                (bounding-rectangle* paint-rectangle)
-              (setf rectangle (make-rectangle*
-                               (+ x1 (- x startx))
-                               (+ y1 (- y starty))
-                               (+ x2 (- x startx))
-                               (+ y2 (- y starty)))))))))))
+    ((object selection-handle-object))
+  (let ((paint-rectangle (paint-object object)))
+    (with-accessors ((ink ink)
+                     (filled filledp))
+        paint-rectangle
+      (let ((pane (get-frame-pane *application-frame* 'app)))
+        (multiple-value-bind (startx starty)
+            (stream-pointer-position pane)
+          (multiple-value-bind (x y)
+              (dragging-output*
+                  (pane :finish-on-release t)
+                (lambda (stream x y)
+                  (with-output-to-output-record (stream)
+                    (multiple-value-bind (x1 y1 x2 y2)
+                        (bounding-rectangle* paint-rectangle)
+                      (draw-rectangle* stream
+                                       (+ x1 (- x startx))
+                                       (+ y1 (- y starty))
+                                       (+ x2 (- x startx))
+                                       (+ y2 (- y starty))
+                                       :ink ink
+                                       :filled filled)))))
+            ;; FIXME! probably want a better API here
+            (with-accessors ((rectangle %rectangle)) paint-rectangle
+              (multiple-value-bind (x1 y1 x2 y2)
+                  (bounding-rectangle* paint-rectangle)
+                (setf rectangle (make-rectangle*
+                                 (+ x1 (- x startx))
+                                 (+ y1 (- y starty))
+                                 (+ x2 (- x startx))
+                                 (+ y2 (- y starty))))))))))))
 
 ;;; 4. com-move-rectangle-selection-handle
 (define-clim-paint-command (com-move-rectangle-selection-handle)
     ((presentation presentation))
-  (let ((rectangle (paint-object (presentation-object presentation))))
-    (com-drag-move-rectangle-selection-handle rectangle)))
+  (let ((object (presentation-object presentation)))
+    (com-drag-move-rectangle-selection-handle object)))
 
 (define-gesture-name move-rectangle-selection-handle-gesture :pointer-button (:middle :control))
 
