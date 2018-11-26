@@ -250,7 +250,7 @@
   (let ((object (presentation-object presentation)))
     (com-drag-move-rectangle-selection-handle object)))
 
-(define-gesture-name move-rectangle-selection-handle-gesture :pointer-button (:middle :control))
+(define-gesture-name move-rectangle-selection-handle-gesture :pointer-button (:left :control))
 
 (define-presentation-to-command-translator move-rectangle-selection-handle-translator
     (selection-handle-point com-move-rectangle-selection-handle clim-paint
