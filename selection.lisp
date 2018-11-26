@@ -41,15 +41,28 @@
                      :sheet stream
                      :region +everywhere+)))))
 
+;;; selection handle
+(defclass selection-handle-object ()
+  ((ink :initarg :ink :accessor ink)
+   (line-thickness :initarg :line-thickness :accessor line-thickness)
+   (filled :initarg :filled :accessor filledp)))
+
+(defclass selection-handle-point (selection-handle-object)
+  ((point :type point :initarg :point :accessor %point)
+   (radius :initarg :radius :accessor radius)))
 ;;;
 ;;; selection-handle-point-presentation
 (defclass selection-handle-point-presentation (standard-presentation) ())
 
 (define-presentation-type selection-handle-point-presentation ())
 
-(define-presentation-method present (object (type point) pane
-                                            (view clim-paint-view) &key)
+(define-presentation-method present (object (type selection-handle-point) pane
+                                            (view clim-paint-view)
+                                            &key)
   (multiple-value-bind (x y)
-      object
-    (draw-circle* pane x y 6 :ink *selection-color* :filled t)))
+      (point-position (%point object))
+    (draw-circle* pane x y (radius object)
+                  :ink (ink object)
+                  :filled (filledp object)
+                  :line-thickness 2)))
 

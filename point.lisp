@@ -4,7 +4,7 @@
 ;;;
 ;;; paint points
 (defclass paint-point (paint-object)
-  ((point :type point :initarg point :accessor %point)))
+  ((point :type point :initarg :point :accessor %point)))
 
 (defgeneric paint-point-p (object)
   (:method ((object t)) nil)
@@ -41,13 +41,18 @@
 
 (defparameter *point-selection-width* 10)
 
-(defun draw-point-selection (pane point)
-  (multiple-value-bind (x y)
-      (point-position point)
-    (draw-circle* pane x y *point-selection-width*
-                  :ink *selection-color*
-                  :filled nil
-                  :line-thickness 2)))
+(defun draw-point-selection (pane point &key (ink +black+)
+                                             (radius 10)
+                                             (filled nil))
+  (declare (ignore pane))
+  (present (make-instance 'selection-handle-point
+                          :point (%point point)
+                          :ink ink
+                          :radius radius
+                          :filled filled)
+           'selection-handle-point
+           :record-type 'selection-handle-point-presentation
+           :single-box t))
 
 (define-presentation-method present (object (type paint-point) pane
                                             (view clim-paint-view) &key)

@@ -38,7 +38,9 @@
 
 (defparameter *rectangle-selection-width* 4)
 
-(defun draw-rectangle-selection (pane rectangle)
+(defun draw-rectangle-selection (pane rectangle &key (ink +black+)
+                                                     (radius 4)
+                                                     (filled nil))
   (multiple-value-bind (x1 y1 x2 y2)
       (bounding-rectangle* rectangle)
     (let ((sx1 (if (>= x2 x1)
@@ -57,10 +59,20 @@
                        :ink *selection-color*
                        :filled nil
                        :line-dashes t)
-      (draw-point* pane sx1 sy1 :ink *selection-color* :line-thickness 8)
-      (draw-point* pane sx2 sy1 :ink *selection-color* :line-thickness 8)
-      (draw-point* pane sx2 sy2 :ink *selection-color* :line-thickness 8)
-      (draw-point* pane sx1 sy2 :ink *selection-color* :line-thickness 8))))
+      (map nil
+           (lambda (x)
+             (present (make-instance 'selection-handle-point
+                                     :point (apply #'make-point x)
+                                     :ink ink
+                                     :radius radius
+                                     :filled filled)
+                      'selection-handle-point
+                      :record-type 'selection-handle-point-presentation
+                      :single-box t))
+           (list (list sx1 sy1)
+                 (list sx2 sy1)
+                 (list sx2 sy2)
+                 (list sx1 sy2))))))
 
 (define-presentation-method present (rectangle (type paint-rectangle) pane
                                           (view clim-paint-view) &key)
