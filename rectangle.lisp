@@ -41,22 +41,26 @@
 (defun draw-rectangle-selection (pane rectangle)
   (multiple-value-bind (x1 y1 x2 y2)
       (bounding-rectangle* rectangle)
-    (draw-rectangle* pane
-                     (if (>= x2 x1)
-                         (- x1 *rectangle-selection-width*)
-                         (+ x1 *rectangle-selection-width* -1))
-                     (if (>= y2 y1)
+    (let ((sx1 (if (>= x2 x1)
+                   (- x1 *rectangle-selection-width*)
+                   (+ x1 *rectangle-selection-width* -1)))
+          (sy1 (if (>= y2 y1)
                          (- y1 *rectangle-selection-width*)
-                         (+ y1 *rectangle-selection-width* -1))
-                     (if (>= x2 x1)
+                         (+ y1 *rectangle-selection-width* -1)))
+          (sx2 (if (>= x2 x1)
                          (+ x2 *rectangle-selection-width* -1)
-                         (- x2 *rectangle-selection-width*))
-                     (if (>= y2 y1)
+                         (- x2 *rectangle-selection-width*)))
+          (sy2 (if (>= y2 y1)
                          (+ y2 *rectangle-selection-width* -1)
-                         (- y2 *rectangle-selection-width*))
-                     :ink *selection-color*
-                     :filled nil
-                     :line-dashes t)))
+                         (- y2 *rectangle-selection-width*))))
+      (draw-rectangle* pane sx1 sy1 sx2 sy2
+                       :ink *selection-color*
+                       :filled nil
+                       :line-dashes t)
+      (draw-point* pane sx1 sy1 :ink *selection-color* :line-thickness 8)
+      (draw-point* pane sx2 sy1 :ink *selection-color* :line-thickness 8)
+      (draw-point* pane sx2 sy2 :ink *selection-color* :line-thickness 8)
+      (draw-point* pane sx1 sy2 :ink *selection-color* :line-thickness 8))))
 
 (define-presentation-method present (rectangle (type paint-rectangle) pane
                                           (view clim-paint-view) &key)
