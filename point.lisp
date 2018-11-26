@@ -46,6 +46,7 @@
                                              (filled nil))
   (declare (ignore pane))
   (present (make-instance 'selection-handle-point
+                          :paint-object point
                           :point (%point point)
                           :ink ink
                           :radius radius

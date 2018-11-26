@@ -62,6 +62,7 @@
       (map nil
            (lambda (x)
              (present (make-instance 'selection-handle-point
+                                     :paint-object rectangle
                                      :point (apply #'make-point x)
                                      :ink ink
                                      :radius radius
@@ -169,5 +170,56 @@
            :tester ((object presentation event)
                     (declare (ignore presentation event))
                     (paint-rectangle-p object)))
+    (object presentation)
+  (list presentation))
+
+
+(define-clim-paint-command (com-drag-move-rectangle-selection-handle)
+    ((paint-rectangle paint-rectangle))
+  (with-accessors ((ink ink)
+                   (filled filledp))
+      paint-rectangle
+    (let ((pane (get-frame-pane *application-frame* 'app)))
+      (multiple-value-bind (startx starty)
+          (stream-pointer-position pane)
+        (multiple-value-bind (x y)
+            (dragging-output*
+                (pane :finish-on-release t)
+              (lambda (stream x y)
+                (with-output-to-output-record (stream)
+                  (multiple-value-bind (x1 y1 x2 y2)
+                      (bounding-rectangle* paint-rectangle)
+                    (draw-rectangle* stream
+                                     (+ x1 (- x startx))
+                                     (+ y1 (- y starty))
+                                     (+ x2 (- x startx))
+                                     (+ y2 (- y starty))
+                                     :ink ink
+                                     :filled filled)))))
+          ;; FIXME! probably want a better API here
+          (with-accessors ((rectangle %rectangle)) paint-rectangle
+            (multiple-value-bind (x1 y1 x2 y2)
+                (bounding-rectangle* paint-rectangle)
+              (setf rectangle (make-rectangle*
+                               (+ x1 (- x startx))
+                               (+ y1 (- y starty))
+                               (+ x2 (- x startx))
+                               (+ y2 (- y starty)))))))))))
+
+;;; 4. com-move-rectangle-selection-handle
+(define-clim-paint-command (com-move-rectangle-selection-handle)
+    ((presentation presentation))
+  (let ((rectangle (presentation-object presentation)))
+    (com-drag-move-rectangle-selection-handle rectangle)))
+
+(define-gesture-name move-rectangle-gesture :pointer-button (:left))
+
+(define-presentation-to-command-translator move-rectangle-selection-handle-translator
+    (paint-rectangle com-move-rectangle-selection-handle clim-paint
+           :gesture move-rectangle-gesture
+           :menu nil
+           :tester ((object presentation event)
+                    (declare (ignore presentation event))
+                    (selection-handle-object-p object)))
     (object presentation)
   (list presentation))
