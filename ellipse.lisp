@@ -3,8 +3,8 @@
 
 ;;;
 ;;; we want an ellipse object that we can modify but the
-;;; standard-ellipse is impaint and itself is a subclass of
-;;; elliptical-thing. The problem with elliptical-thiing is that it
+;;; standard-ellipse is immutable (?) and itself is a subclass of
+;;; elliptical-thing. The problem with elliptical-thing is that it
 ;;; stores the transformation of the unit circle to the ellipse, not
 ;;; the underlying parameters used to define the ellipse via
 ;;; make-ellipse. So, we'll store those parameters here, along with a
@@ -84,35 +84,60 @@
                        :ink *selection-color*
                        :line-thickness 2
                        :line-dashes t
-                       :filled nil)))))
+                       :filled nil)
+        (draw-point* pane x1 y1
+                     :ink *selection-color*
+                     :line-thickness 8)
+        (draw-line* pane
+                    x1 y1
+                    (+ x1 radius-1-dx)
+                    (+ y1 radius-1-dy)
+                    :ink *selection-color*
+                    :line-thickness 3)
+        (draw-point* pane
+                     (+ x1 radius-1-dx)
+                     (+ y1 radius-1-dy)
+                     :ink *selection-color*
+                     :line-thickness 8)
+        (draw-line* pane
+                    x1 y1
+                    (+ x1 radius-2-dx)
+                    (+ y1 radius-2-dy)
+                    :ink *selection-color*
+                    :line-thickness 3)
+        (draw-point* pane
+                     (+ x1 radius-2-dx)
+                     (+ y1 radius-2-dy)
+                     :ink *selection-color*
+                     :line-thickness 8))))
 
-(define-presentation-method present (ellipse (type paint-ellipse) pane
-                                             (view clim-paint-view) &key)
-  (with-accessors ((center-point center-point)
-                   (radius-1-dx radius-1-dx)
-                   (radius-1-dy radius-1-dy)
-                   (radius-2-dx radius-2-dx)
-                   (radius-2-dy radius-2-dy)
-                   (start-angle start-angle)
-                   (end-angle end-angle)
-                   (line-thickness line-thickness)
-                   (filledp filledp)
-                   (ink ink))
-      ellipse
-    (multiple-value-bind (x1 y1)
-        (point-position center-point)
-      (apply #'draw-ellipse* pane
-             x1 y1
-             radius-1-dx radius-1-dy
-             radius-2-dx radius-2-dy
-             :filled filledp
-             :ink ink
-             (append
-              (when start-angle `(:start-angle ,start-angle))
-              (when end-angle `(:end-angle ,end-angle))
-              (when line-thickness `(:line-thickness ,line-thickness)))))
-    (if (gethash ellipse *selected-object-hash*)
-        (draw-ellipse-selection pane ellipse))))
+  (define-presentation-method present (ellipse (type paint-ellipse) pane
+                                               (view clim-paint-view) &key)
+    (with-accessors ((center-point center-point)
+                     (radius-1-dx radius-1-dx)
+                     (radius-1-dy radius-1-dy)
+                     (radius-2-dx radius-2-dx)
+                     (radius-2-dy radius-2-dy)
+                     (start-angle start-angle)
+                     (end-angle end-angle)
+                     (line-thickness line-thickness)
+                     (filledp filledp)
+                     (ink ink))
+        ellipse
+      (multiple-value-bind (x1 y1)
+          (point-position center-point)
+        (apply #'draw-ellipse* pane
+               x1 y1
+               radius-1-dx radius-1-dy
+               radius-2-dx radius-2-dy
+               :filled filledp
+               :ink ink
+               (append
+                (when start-angle `(:start-angle ,start-angle))
+                (when end-angle `(:end-angle ,end-angle))
+                (when line-thickness `(:line-thickness ,line-thickness)))))
+      (if (gethash ellipse *selected-object-hash*)
+          (draw-ellipse-selection pane ellipse)))))
 
 ;;;
 ;;; refined-position test
