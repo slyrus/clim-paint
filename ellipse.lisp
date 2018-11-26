@@ -1,6 +1,9 @@
 
 (in-package :clim-paint)
 
+(defparameter *ellipse-highlight-margin* 6)
+(defparameter *ellipse-highlight-thickness* 2)
+
 ;;;
 ;;; we want an ellipse object that we can modify but the
 ;;; standard-ellipse is immutable (?) and itself is a subclass of
@@ -168,9 +171,6 @@
 
 ;;;
 ;;; highlighting
-(defparameter *ellipse-highlight-margin* 6)
-(defparameter *ellipse-highlight-thickness* 2)
-
 (define-presentation-method highlight-presentation
     ((type paint-ellipse) (record ellipse-presentation) stream state)
   (let ((paint-ellipse (presentation-object record)))
