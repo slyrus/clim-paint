@@ -38,6 +38,19 @@
 
 (define-presentation-type rectangle-presentation ())
 
+;;
+;; subclass selection-handle-point which has a point, which is the
+;; point of the selection-handle itself, but only a single reference
+;; to the selected object. So use this class to add a slot for the
+;; particular point on the rectangle which was selected. Previously I
+;; had just stored a cons in the paint-object slot, but it seems
+;; better to be explicit about what information we want to store and
+;; to not break the semantics of the selection-handle-object
+;; superclass should any methods expect paint-object to just be an
+;; object, not a cons.
+(defclass rectangle-handle-point (selection-handle-point)
+  ((rectangle-point :initarg :rectangle-point :accessor rectangle-point)))
+
 (defparameter *rectangle-selection-width* 4)
 
 (defun draw-rectangle-selection (pane rectangle &key (ink +black+)
@@ -63,8 +76,9 @@
                          :ink *selection-color*
                          :filled nil
                          :line-dashes t)
-        (present (make-instance 'selection-handle-point
-                                :paint-object (cons rectangle (%point-1 rectangle))
+        (present (make-instance 'rectangle-handle-point
+                                :paint-object rectangle
+                                :rectangle-point (%point-1 rectangle)
                                 :point (make-point sx1 sy1)
                                 :ink ink
                                 :radius radius
@@ -72,8 +86,9 @@
                  'selection-handle-point
                  :record-type 'selection-handle-point-presentation
                  :single-box t)
-        (present (make-instance 'selection-handle-point
-                                :paint-object (cons rectangle (%point-2 rectangle))
+        (present (make-instance 'rectangle-handle-point
+                                :paint-object rectangle
+                                :rectangle-point (%point-2 rectangle)
                                 :point (make-point sx2 sy2)
                                 :ink ink
                                 :radius radius
@@ -203,8 +218,9 @@
 
 (define-clim-paint-command (com-drag-move-rectangle-selection-handle)
     ((selection-handle-point selection-handle-point))
-  (destructuring-bind (rectangle . my-point)
-      (paint-object selection-handle-point)
+  (with-accessors ((rectangle paint-object)
+                   (my-point rectangle-point))
+      selection-handle-point
     (with-accessors ((ink ink)
                      (filled filledp))
         rectangle
@@ -254,10 +270,10 @@
 
 (define-presentation-to-command-translator move-rectangle-selection-handle-translator
     (selection-handle-point com-move-rectangle-selection-handle clim-paint
-           :gesture move-rectangle-selection-handle-gesture
-           :menu nil
-           :tester ((object presentation event)
-                    (declare (ignore presentation event))
-                    (selection-handle-object-p object)))
+                            :gesture move-rectangle-selection-handle-gesture
+                            :menu nil
+                            :tester ((object presentation event)
+                                     (declare (ignore presentation event))
+                                     (selection-handle-object-p object)))
     (object presentation)
   (list presentation))
