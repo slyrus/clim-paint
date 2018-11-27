@@ -361,21 +361,48 @@
                         ellipse
                       (multiple-value-bind (x1 y1)
                           (point-position center-point)
-                        (draw-ellipse* stream
-                                       (+ x1 (- x startx)) 
-                                       (+ y1 (- y starty)) 
-                                       (- radius-1-dx (- x startx))
-                                       (- radius-1-dy (- y starty)) 
-                                       (- radius-2-dx (- x startx))
-                                       (- radius-2-dy (- y starty))
-                                       :start-angle start-angle
-                                       :end-angle end-angle
-                                       :ink ink
-                                       :filled filled
-                                       :line-thickness line-thickness)))
-                    ;; and draw the new control points/lines
-                    ;; FIXME!
-                    )))
+                        (let ((x1 (+ x1 (- x startx)))
+                              (y1 (+ y1 (- y starty)))
+                              (radius-1-dx (- radius-1-dx (- x startx)))
+                              (radius-1-dy (- radius-1-dy (- y starty)))
+                              (radius-2-dx (- radius-2-dx (- x startx)))
+                              (radius-2-dy (- radius-2-dy (- y starty))))
+                          (draw-ellipse* stream
+                                         x1 y1
+                                         radius-1-dx
+                                         radius-1-dy
+                                         radius-2-dx
+                                         radius-2-dy
+                                         :start-angle start-angle
+                                         :end-angle end-angle
+                                         :ink ink
+                                         :filled filled
+                                         :line-thickness line-thickness)
+                          (draw-circle* stream
+                                        x1 y1
+                                        5
+                                        :ink *selection-color*
+                                        :line-thickness 2)
+                          (draw-line* stream
+                                      x1 y1
+                                      (+ x1 radius-1-dx) (+ y1 radius-1-dy)
+                                      :ink *selection-color*
+                                      :line-thickness 3)
+                          (draw-circle* stream
+                                        (+ x1 radius-1-dx) (+ y1 radius-1-dy)
+                                        5
+                                        :ink *selection-color*
+                                        :line-thickness 2)
+                          (draw-line* stream
+                                      x1 y1
+                                      (+ x1 radius-2-dx) (+ y1 radius-2-dy)
+                                      :ink *selection-color*
+                                      :line-thickness 3)
+                          (draw-circle* stream
+                                        (+ x1 radius-2-dx) (+ y1 radius-2-dy)
+                                        5
+                                        :ink *selection-color*
+                                        :line-thickness 2)))))))
             (with-accessors ((center-point center-point)
                              (radius-1-dx radius-1-dx)
                              (radius-1-dy radius-1-dy)
@@ -428,34 +455,52 @@
                         ellipse
                       (multiple-value-bind (x1 y1)
                           (point-position center-point)
-                        (if (= radius-index 1)
-                            (draw-ellipse* stream
-                                           x1 
-                                           y1 
-                                           (+ radius-1-dx (- x startx))
-                                           (+ radius-1-dy (- y starty))
-                                           radius-2-dx
-                                           radius-2-dy
-                                           :start-angle start-angle
-                                           :end-angle end-angle
-                                           :ink ink
-                                           :filled filled
-                                           :line-thickness line-thickness)
-                            (draw-ellipse* stream
-                                           x1 
-                                           y1 
-                                           radius-1-dx
-                                           radius-1-dy
-                                           (+ radius-2-dx (- x startx))
-                                           (+ radius-2-dy (- y starty))
-                                           :start-angle start-angle
-                                           :end-angle end-angle
-                                           :ink ink
-                                           :filled filled
-                                           :line-thickness line-thickness))))
-                    ;; and draw the new control points/lines
-                    ;; FIXME
-                    )))
+                        (let ((drag-radius-1-dx (if (= radius-index 1)
+                                                    (+ radius-1-dx (- x startx))
+                                                    radius-1-dx))
+                              (drag-radius-1-dy (if (= radius-index 1)
+                                                    (+ radius-1-dy (- y starty))
+                                                    radius-1-dy))
+                              (drag-radius-2-dx (if (= radius-index 2)
+                                                    (+ radius-2-dx (- x startx))
+                                                    radius-2-dx))
+                              (drag-radius-2-dy (if (= radius-index 2)
+                                                    (+ radius-2-dy (- y starty))
+                                                    radius-2-dy)))
+                          (draw-ellipse* stream
+                                         x1 y1
+                                         drag-radius-1-dx drag-radius-1-dy
+                                         drag-radius-2-dx drag-radius-2-dy
+                                         :start-angle start-angle
+                                         :end-angle end-angle
+                                         :ink ink
+                                         :filled filled
+                                         :line-thickness line-thickness)
+                          (draw-circle* stream
+                                        x1 y1
+                                        5
+                                        :ink *selection-color*
+                                        :line-thickness 2)
+                          (draw-line* stream
+                                      x1 y1
+                                      (+ x1 drag-radius-1-dx) (+ y1 drag-radius-1-dy)
+                                      :ink *selection-color*
+                                      :line-thickness 3)
+                          (draw-circle* stream
+                                        (+ x1 drag-radius-1-dx) (+ y1 drag-radius-1-dy)
+                                        5
+                                        :ink *selection-color*
+                                        :line-thickness 2)
+                          (draw-line* stream
+                                      x1 y1
+                                      (+ x1 drag-radius-2-dx) (+ y1 drag-radius-2-dy)
+                                      :ink *selection-color*
+                                      :line-thickness 3)
+                          (draw-circle* stream
+                                        (+ x1 drag-radius-2-dx) (+ y1 drag-radius-2-dy)
+                                        5
+                                        :ink *selection-color*
+                                        :line-thickness 2)))))))
             (with-accessors ((radius-1-dx radius-1-dx)
                              (radius-1-dy radius-1-dy)
                              (radius-2-dx radius-2-dx)
