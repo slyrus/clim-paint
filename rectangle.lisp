@@ -83,7 +83,7 @@
                                 :ink ink
                                 :radius radius
                                 :filled filled)
-                 'selection-handle-point
+                 'rectangle-handle-point
                  :record-type 'selection-handle-point-presentation
                  :single-box t)
         (present (make-instance 'rectangle-handle-point
@@ -93,7 +93,7 @@
                                 :ink ink
                                 :radius radius
                                 :filled filled)
-                 'selection-handle-point
+                 'rectangle-handle-point
                  :record-type 'selection-handle-point-presentation
                  :single-box t)))))
 
@@ -210,17 +210,16 @@
     (object presentation)
   (list presentation))
 
-;; FIXME!!!
 (defun rectangle-other-point (rectangle point)
   (if (eql (%point-1 rectangle) point)
       (%point-2 rectangle)
       (%point-1 rectangle)))
 
 (define-clim-paint-command (com-drag-move-rectangle-selection-handle)
-    ((selection-handle-point selection-handle-point))
+    ((rectangle-handle-point rectangle-handle-point))
   (with-accessors ((rectangle paint-object)
                    (my-point rectangle-point))
-      selection-handle-point
+      rectangle-handle-point
     (with-accessors ((ink ink)
                      (filled filledp))
         rectangle
@@ -244,13 +243,13 @@
                                          :ink ink
                                          :filled filled)
                         (multiple-value-bind (x1 y1)
-                            (point-position (%point selection-handle-point))
+                            (point-position (%point rectangle-handle-point))
                           (draw-circle* stream
                                         (+ x1 (- x startx))
                                         (+ y1 (- y starty))
-                                        (radius selection-handle-point)
-                                        :ink (ink selection-handle-point)
-                                        :filled (filledp selection-handle-point)
+                                        (radius rectangle-handle-point)
+                                        :ink (ink rectangle-handle-point)
+                                        :filled (filledp rectangle-handle-point)
                                         :line-thickness 2)))))
                 ;; FIXME! probably want a better API here
                 (setf (%point-1 rectangle) (make-point
@@ -269,7 +268,7 @@
 (define-gesture-name move-rectangle-selection-handle-gesture :pointer-button (:left :control))
 
 (define-presentation-to-command-translator move-rectangle-selection-handle-translator
-    (selection-handle-point com-move-rectangle-selection-handle clim-paint
+    (rectangle-handle-point com-move-rectangle-selection-handle clim-paint
                             :gesture move-rectangle-selection-handle-gesture
                             :menu nil
                             :tester ((object presentation event)
