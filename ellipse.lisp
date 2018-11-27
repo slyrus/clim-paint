@@ -56,9 +56,21 @@
 
 (define-presentation-type ellipse-presentation ())
 
+(defclass ellipse-radius-handle-point (selection-handle-point)
+  ((radius-index :initarg :radius-index :accessor radius-index
+                 :documentation "Either 1 or 2 indicating whether this
+                 point corresponds to ellipse radius-1 or radius-2.")
+   (radius-dx :initarg :radius-dx :accessor radius-dx)
+   (radius-dy :initarg :radius-dy :accessor radius-dy)))
+
+(defclass ellipse-center-handle-point (selection-handle-point)
+  ((center-point :initarg :center-point :accessor center-point)))
+
 (defparameter *ellipse-selection-width* 8)
 
-(defun draw-ellipse-selection (pane ellipse)
+(defun draw-ellipse-selection (pane ellipse &key (ink *selection-color*)
+                                                 (radius 5)
+                                                 (filled nil))
   (with-accessors ((center-point center-point)
                    (radius-1-dx radius-1-dx)
                    (radius-1-dy radius-1-dy)
@@ -67,8 +79,7 @@
                    (start-angle start-angle)
                    (end-angle end-angle)
                    (line-thickness line-thickness)
-                   (filledp filledp)
-                   (ink ink))
+                   (filledp filledp))
       ellipse
     (multiple-value-bind (x1 y1)
         (point-position center-point)
@@ -88,31 +99,57 @@
                        :line-thickness 2
                        :line-dashes t
                        :filled nil)
-        (draw-point* pane x1 y1
-                     :ink *selection-color*
-                     :line-thickness 8)
+
+        (present (make-instance 'ellipse-center-handle-point
+                                :paint-object ellipse
+                                :center-point center-point
+                                :point center-point
+                                :ink ink
+                                :radius radius
+                                :filled filled)
+                 'selection-handle-point
+                 :record-type 'selection-handle-point-presentation
+                 :single-box t)
         (draw-line* pane
                     x1 y1
                     (+ x1 radius-1-dx)
                     (+ y1 radius-1-dy)
                     :ink *selection-color*
                     :line-thickness 3)
-        (draw-point* pane
-                     (+ x1 radius-1-dx)
-                     (+ y1 radius-1-dy)
-                     :ink *selection-color*
-                     :line-thickness 8)
+        (present (make-instance 'ellipse-radius-handle-point
+                                :paint-object ellipse
+                                :radius-index 1
+                                :radius-dx radius-1-dx
+                                :radius-dy radius-1-dy
+                                :point (multiple-value-bind (cx cy)
+                                           (point-position center-point)
+                                         (make-point (+ cx radius-1-dx) (+ cy radius-1-dy)))
+                                :ink ink
+                                :radius radius
+                                :filled filled)
+                 'selection-handle-point
+                 :record-type 'selection-handle-point-presentation
+                 :single-box t)
         (draw-line* pane
                     x1 y1
                     (+ x1 radius-2-dx)
                     (+ y1 radius-2-dy)
                     :ink *selection-color*
                     :line-thickness 3)
-        (draw-point* pane
-                     (+ x1 radius-2-dx)
-                     (+ y1 radius-2-dy)
-                     :ink *selection-color*
-                     :line-thickness 8)))))
+        (present (make-instance 'ellipse-radius-handle-point
+                                :paint-object ellipse
+                                :radius-index 2
+                                :radius-dx radius-2-dx
+                                :radius-dy radius-2-dy
+                                :point (multiple-value-bind (cx cy)
+                                           (point-position center-point)
+                                         (make-point (+ cx radius-2-dx) (+ cy radius-2-dy)))
+                                :ink ink
+                                :radius radius
+                                :filled filled)
+                 'selection-handle-point
+                 :record-type 'selection-handle-point-presentation
+                 :single-box t)))))
 
 (define-presentation-method present (ellipse (type paint-ellipse) pane
                                              (view clim-paint-view) &key)
