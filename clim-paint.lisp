@@ -81,7 +81,8 @@
   (list (make-paint-point 10 20 :ink +red+)
         (make-paint-point 30 20 :ink +green+)
         (make-paint-point 50 20 :ink +blue+)
-        (make-paint-rectangle 50 160 100 200 :ink +pink+ :filled t)
+        (make-paint-rectangle 50 160 100 200 :ink +blue+ :filled t)
+        (make-paint-rectangle 350 210 400 250 :ink +dark-grey+ :filled t)
         (make-paint-ellipse (make-paint-point 100 100 :ink +orange+)
                             10 30 40 15
                             :ink +orange+
@@ -90,7 +91,7 @@
                             30 0 0 40
                             :ink +brown+
                             :filled t)
-        (make-paint-ellipse (make-paint-point 125 200)
+        (make-paint-ellipse (make-paint-point 225 200)
                             150 -90 60 25
                             :ink +green+
                             :line-thickness 5
