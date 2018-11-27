@@ -107,7 +107,7 @@
                                 :ink ink
                                 :radius radius
                                 :filled filled)
-                 'selection-handle-point
+                 'ellipse-center-handle-point
                  :record-type 'selection-handle-point-presentation
                  :single-box t)
         (draw-line* pane
@@ -127,7 +127,7 @@
                                 :ink ink
                                 :radius radius
                                 :filled filled)
-                 'selection-handle-point
+                 'ellipse-radius-handle-point
                  :record-type 'selection-handle-point-presentation
                  :single-box t)
         (draw-line* pane
@@ -147,7 +147,7 @@
                                 :ink ink
                                 :radius radius
                                 :filled filled)
-                 'selection-handle-point
+                 'ellipse-radius-handle-point
                  :record-type 'selection-handle-point-presentation
                  :single-box t)))))
 
@@ -327,5 +327,184 @@
            :tester ((object presentation event)
                     (declare (ignore presentation event))
                     (paint-ellipse-p object)))
+    (object presentation)
+  (list presentation))
+
+;;; 3. dragging
+(define-clim-paint-command (com-drag-move-ellipse-center-selection-handle)
+    ((ellipse-center-handle-point ellipse-center-handle-point))
+
+  (with-accessors ((ellipse paint-object))
+      ellipse-center-handle-point
+    (with-accessors ((ink ink)
+                     (filled filledp))
+        ellipse
+      (let ((pane (get-frame-pane *application-frame* 'app)))
+        (multiple-value-bind (startx starty)
+            (stream-pointer-position pane)
+          (multiple-value-bind (x y)
+              (dragging-output*
+                  (pane :finish-on-release t)
+                (lambda (stream x y)
+                  (with-output-to-output-record (stream)
+                    ;; draw the ellipse in its new form
+                    (with-accessors ((center-point center-point)
+                                     (radius-1-dx radius-1-dx)
+                                     (radius-1-dy radius-1-dy)
+                                     (radius-2-dx radius-2-dx)
+                                     (radius-2-dy radius-2-dy)
+                                     (start-angle start-angle)
+                                     (end-angle end-angle)
+                                     (filledp filledp)
+                                     (ink ink)
+                                     (line-thickness line-thickness))
+                        ellipse
+                      (multiple-value-bind (x1 y1)
+                          (point-position center-point)
+                        (draw-ellipse* stream
+                                       (+ x1 (- x startx)) 
+                                       (+ y1 (- y starty)) 
+                                       (- radius-1-dx (- x startx))
+                                       (- radius-1-dy (- y starty)) 
+                                       (- radius-2-dx (- x startx))
+                                       (- radius-2-dy (- y starty))
+                                       :start-angle start-angle
+                                       :end-angle end-angle
+                                       :ink ink
+                                       :filled filled
+                                       :line-thickness line-thickness)))
+                    ;; and draw the new control points/lines
+                    ;; FIXME!
+                    )))
+            (with-accessors ((center-point center-point)
+                             (radius-1-dx radius-1-dx)
+                             (radius-1-dy radius-1-dy)
+                             (radius-2-dx radius-2-dx)
+                             (radius-2-dy radius-2-dy)
+                             (start-angle start-angle)
+                             (end-angle end-angle)
+                             (filledp filledp)
+                             (ink ink)
+                             (line-thickness line-thickness))
+                ellipse
+              (multiple-value-bind (x1 y1)
+                  (point-position center-point)
+                (setf center-point (make-point (+ x1 (- x startx))
+                                               (+ y1 (- y starty)))
+                      radius-1-dx (- radius-1-dx (- x startx))
+                      radius-1-dy (- radius-1-dy (- y starty)) 
+                      radius-2-dx (- radius-2-dx (- x startx))
+                      radius-2-dy (- radius-2-dy (- y starty)))))))))))
+
+(define-clim-paint-command (com-drag-move-ellipse-radius-selection-handle)
+    ((ellipse-radius-handle-point ellipse-radius-handle-point))
+
+  (with-accessors ((ellipse paint-object)
+                   (radius-index radius-index))
+      ellipse-radius-handle-point
+    (with-accessors ((ink ink)
+                     (filled filledp))
+        ellipse
+      (let ((pane (get-frame-pane *application-frame* 'app)))
+        (multiple-value-bind (startx starty)
+            (stream-pointer-position pane)
+          (multiple-value-bind (x y)
+              (dragging-output*
+                  (pane :finish-on-release t)
+                (lambda (stream x y)
+                  (with-output-to-output-record (stream)
+
+                    ;; draw the ellipse in its new form
+                    (with-accessors ((center-point center-point)
+                                     (radius-1-dx radius-1-dx)
+                                     (radius-1-dy radius-1-dy)
+                                     (radius-2-dx radius-2-dx)
+                                     (radius-2-dy radius-2-dy)
+                                     (start-angle start-angle)
+                                     (end-angle end-angle)
+                                     (filledp filledp)
+                                     (ink ink)
+                                     (line-thickness line-thickness))
+                        ellipse
+                      (multiple-value-bind (x1 y1)
+                          (point-position center-point)
+                        (if (= radius-index 1)
+                            (draw-ellipse* stream
+                                           x1 
+                                           y1 
+                                           (+ radius-1-dx (- x startx))
+                                           (+ radius-1-dy (- y starty))
+                                           radius-2-dx
+                                           radius-2-dy
+                                           :start-angle start-angle
+                                           :end-angle end-angle
+                                           :ink ink
+                                           :filled filled
+                                           :line-thickness line-thickness)
+                            (draw-ellipse* stream
+                                           x1 
+                                           y1 
+                                           radius-1-dx
+                                           radius-1-dy
+                                           (+ radius-2-dx (- x startx))
+                                           (+ radius-2-dy (- y starty))
+                                           :start-angle start-angle
+                                           :end-angle end-angle
+                                           :ink ink
+                                           :filled filled
+                                           :line-thickness line-thickness))))
+                    ;; and draw the new control points/lines
+                    ;; FIXME
+                    )))
+            (with-accessors ((radius-1-dx radius-1-dx)
+                             (radius-1-dy radius-1-dy)
+                             (radius-2-dx radius-2-dx)
+                             (radius-2-dy radius-2-dy))
+                ellipse
+              ;; set the new parameters of the ellipse
+              (if (= radius-index 1)
+                  (progn
+                    (incf radius-1-dx (- x startx))
+                    (incf radius-1-dy (- y starty)))
+                  (progn
+                    (incf radius-2-dx (- x startx))
+                    (incf radius-2-dy (- y starty)))))))))))
+
+;;; 4. move selection commands
+
+(define-clim-paint-command (com-move-ellipse-center-selection-handle)
+    ((presentation presentation))
+  (let ((object (presentation-object presentation)))
+    (com-drag-move-ellipse-center-selection-handle object)))
+
+(define-gesture-name move-ellipse-center-selection-handle-gesture :pointer-button (:left :control))
+
+(define-presentation-to-command-translator move-ellipse-center-selection-handle-translator
+    (ellipse-center-handle-point com-move-ellipse-center-selection-handle clim-paint
+                            :gesture move-ellipse-center-selection-handle-gesture
+                            :menu nil
+                            #+nil :tester
+                            #+nil ((object presentation event)
+                                   (declare (ignore presentation event))
+                                   (selection-handle-object-p object)))
+    (object presentation)
+  (list presentation))
+
+
+(define-clim-paint-command (com-move-ellipse-radius-selection-handle)
+    ((presentation presentation))
+  (let ((object (presentation-object presentation)))
+    (com-drag-move-ellipse-radius-selection-handle object)))
+
+(define-gesture-name move-ellipse-radius-selection-handle-gesture :pointer-button (:left :control))
+
+(define-presentation-to-command-translator move-ellipse-radius-selection-handle-translator
+    (ellipse-radius-handle-point com-move-ellipse-radius-selection-handle clim-paint
+                            :gesture move-ellipse-radius-selection-handle-gesture
+                            :menu nil
+                            #+nil :tester
+                            #+nil ((object presentation event)
+                                   (declare (ignore presentation event))
+                                   (selection-handle-object-p object)))
     (object presentation)
   (list presentation))

@@ -210,6 +210,7 @@
     (object presentation)
   (list presentation))
 
+;;; 3. dragging
 (defun rectangle-other-point (rectangle point)
   (if (eql (%point-1 rectangle) point)
       (%point-2 rectangle)
@@ -271,8 +272,9 @@
     (rectangle-handle-point com-move-rectangle-selection-handle clim-paint
                             :gesture move-rectangle-selection-handle-gesture
                             :menu nil
-                            :tester ((object presentation event)
-                                     (declare (ignore presentation event))
-                                     (selection-handle-object-p object)))
+                            #+nil :tester
+                            #+nil ((object presentation event)
+                                   (declare (ignore presentation event))
+                                   (selection-handle-object-p object)))
     (object presentation)
   (list presentation))
