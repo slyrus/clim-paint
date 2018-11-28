@@ -210,7 +210,7 @@
     (object presentation)
   (list presentation))
 
-;;; 3. dragging
+;;; 3. selection handle dragging
 (defun rectangle-other-point (rectangle point)
   (if (eql (%point-1 rectangle) point)
       (%point-2 rectangle)

@@ -27,7 +27,11 @@
   (:method ((object paint-ellipse))
     (present object
              'paint-ellipse
-             :record-type 'ellipse-presentation :single-box nil)))
+             :record-type 'ellipse-presentation :single-box nil))
+  (:method ((object paint-bezier-curve))
+    (present object
+             'paint-bezier-curve
+             :record-type 'bezier-curve-presentation :single-box nil)))
 
 ;;;
 ;;; main display function
@@ -77,6 +81,10 @@
 ;;; the actual application
 (defvar *clim-paint-app*)
 
+(defun coord-seq-to-point-seq (coord-seq)
+  (loop for (x y) on coord-seq by #'cddr
+     collect (make-point x y)))
+
 (defun make-default-shapes ()
   (list (make-paint-point 10 20 :ink +red+)
         (make-paint-point 30 20 :ink +green+)
@@ -95,7 +103,11 @@
                             150 -90 60 25
                             :ink +green+
                             :line-thickness 5
-                            :filled nil)))
+                            :filled nil)
+        (make-paint-bezier-curve (coord-seq-to-point-seq
+                                  (list 20 150 20 80 90 110 90 170 90 220 140 210 140 140))
+                                 :ink +dark-blue+
+                                 :line-thickness 4)))
 
 (defun clim-paint (&key (new-process t))
   (flet ((run ()
