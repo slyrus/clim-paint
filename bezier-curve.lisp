@@ -29,7 +29,23 @@
 (define-presentation-type bezier-curve-presentation ())
 
 (defun draw-bezier-curve-selection (pane bezier-curve &key (ink *selection-color*)
-                                                           (filled nil)))
+                                                           (filled nil))
+  (let* ((curve (%bezier-curve bezier-curve))
+         (segments (mcclim-bezier::%segments curve)))
+    (map nil (lambda (segment)
+               (draw-line pane
+                          (slot-value segment 'mcclim-bezier::p0)
+                          (slot-value segment 'mcclim-bezier::p1)
+                          :ink +black+)
+               (draw-line pane
+                          (slot-value segment 'mcclim-bezier::p1)
+                          (slot-value segment 'mcclim-bezier::p2)
+                          :ink +black+)
+               (draw-line pane
+                          (slot-value segment 'mcclim-bezier::p2)
+                          (slot-value segment 'mcclim-bezier::p3)
+                          :ink +black+))
+            segments)))
 
 (define-presentation-method present (bezier-curve (type paint-bezier-curve) pane
                                              (view clim-paint-view) &key)
