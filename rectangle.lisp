@@ -148,60 +148,37 @@
                                        (- y1 *rectangle-highlight-margin* 2)
                                        (+ x2 *rectangle-highlight-margin* 2)
                                        (+ y2 *rectangle-highlight-margin* 2)))))))))))
-;;; 1. com-drag-move-rectangle
-(define-clim-paint-command (com-drag-move-rectangle)
-    ((rectangle paint-rectangle))
-  (with-accessors ((ink ink)
-                   (filled filledp))
-      rectangle
-    (let ((pane (get-frame-pane *application-frame* 'app)))
-      (multiple-value-bind (startx starty)
-          (stream-pointer-position pane)
-        (multiple-value-bind (x y)
-            (dragging-output*
-                (pane :finish-on-release t)
-              (lambda (stream x y)
-                (with-output-to-output-record (stream)
-                  (multiple-value-bind (x1 y1)
-                      (point-position (%point-1 rectangle))
-                    (multiple-value-bind (x2 y2)
-                        (point-position (%point-2 rectangle))
-                      (draw-rectangle* stream
-                                       (+ x1 (- x startx))
-                                       (+ y1 (- y starty))
-                                       (+ x2 (- x startx))
-                                       (+ y2 (- y starty))
-                                       :ink ink
-                                       :filled filled))))))
-          ;; FIXME! probably want a better API here
-          (multiple-value-bind (x1 y1)
-              (point-position (%point-1 rectangle))
-            (multiple-value-bind (x2 y2)
-                (point-position (%point-2 rectangle))
-              (setf (%point-1 rectangle) (make-point
-                                          (+ x1 (- x startx))
-                                          (+ y1 (- y starty)))
-                    (%point-2 rectangle) (make-point
-                                          (+ x2 (- x startx))
-                                          (+ y2 (- y starty)))))))))))
 
-;;; 2. com-move-rectangle
-(define-clim-paint-command (com-move-rectangle)
-    ((presentation presentation))
-  (let ((rectangle (presentation-object presentation)))
-    (com-drag-move-rectangle rectangle)))
+(defmethod move-dragging ((rectangle paint-rectangle) stream x y)
+  (with-output-to-output-record (stream)
+    (with-accessors ((ink ink)
+                     (filled filledp)
+                     (point-1 %point-1)
+                     (point-2 %point-2))
+        rectangle
+      (multiple-value-bind (x1 y1)
+          (point-position point-1)
+        (multiple-value-bind (x2 y2)
+            (point-position point-2)
+          (draw-rectangle* stream
+                           (+ x1 x)
+                           (+ y1 y)
+                           (+ x2 x)
+                           (+ y2 y)
+                           :ink ink
+                           :filled filled))))))
 
-(define-gesture-name move-rectangle-gesture :pointer-button (:left))
+(defmethod move-update ((rectangle paint-rectangle) x y)
+  (with-accessors ((point-1 %point-1)
+                   (point-2 %point-2))
+        rectangle
+    (multiple-value-bind (x1 y1)
+        (point-position point-1)
+      (multiple-value-bind (x2 y2)
+          (point-position point-2)
+        (setf point-1 (make-point (+ x1 x) (+ y1 y))
+              point-2 (make-point (+ x2 x) (+ y2 y)))))))
 
-(define-presentation-to-command-translator move-rectangle-translator
-    (paint-rectangle com-move-rectangle clim-paint
-           :gesture move-rectangle-gesture
-           :menu nil
-           :tester ((object presentation event)
-                    (declare (ignore presentation event))
-                    (paint-rectangle-p object)))
-    (object presentation)
-  (list presentation))
 
 ;;; 3. selection handle dragging
 (defun rectangle-other-point (rectangle point)
