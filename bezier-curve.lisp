@@ -3,12 +3,11 @@
 
 (defclass paint-bezier-curve-segment (paint-object)
   ((segment :initarg :segment :accessor segment)
-   (bezier-curve :initarg :bezier-curve :accessor bezier-curve)
    (line-thickness :initarg :line-thickness :accessor line-thickness :initform 1)))
 
 (defclass paint-bezier-curve (paint-object)
   ((control-points :initarg :control-points :accessor %control-points)
-   (line-thickness :initarg :line-thickness :accessor line-thickness :initform 1)
+   (line-thickness :initarg :line-thickness :accessor line-thickness :initform 3)
    (filled :initarg :filled :accessor filledp :initform nil)))
 
 (defmacro control-point (bezier-curve index)
@@ -71,26 +70,21 @@
        (when p1
          (draw-line pane p0 p1 :ink +black+ :line-dashes t))))
 
-(defun draw-paint-bezier-curve-segment (pane bezier-curve-segment &key ink)
+(defun draw-paint-bezier-curve-segment (pane bezier-curve-segment)
   (with-accessors ((segment segment)
-                   (bezier-curve bezier-curve)
-                   (object-ink ink))
+                   (ink ink)
+                   (line-thickness line-thickness))
       bezier-curve-segment
-    (with-accessors ((line-thickness line-thickness)
-                     (filledp filledp)
-                     (parent-ink ink))
-        bezier-curve
-      (apply #'draw-bezier-design* pane (make-bezier-curve segment)
-             :filled filledp
-             :ink (or ink object-ink parent-ink)
-             (append
-              (when line-thickness `(:line-thickness ,line-thickness)))))))
+    (apply #'draw-bezier-design* pane (make-bezier-curve segment)
+           :ink ink
+           (append
+            (when line-thickness `(:line-thickness ,line-thickness))))))
 
 (define-presentation-method present (bezier-curve-segment (type paint-bezier-curve-segment) pane
                                                           (view clim-paint-view) &key)
   (draw-paint-bezier-curve-segment pane bezier-curve-segment))
 
-(defun draw-paint-bezier-curve (pane bezier-curve &key ink)
+(defun draw-paint-bezier-curve (pane bezier-curve &key ink line-thickness)
   (declare (ignore pane))
   (destructuring-bind (leftover segment-seq)
       (reduce (lambda (acc point)
@@ -115,13 +109,17 @@
     (loop for seg across segment-seq
        do (present (make-instance 'paint-bezier-curve-segment
                                   :segment seg
-                                  :bezier-curve bezier-curve
-                                  :ink ink)
+                                  :ink ink
+                                  :line-thickness line-thickness)
                    'paint-bezier-curve-segment))))
 
 (define-presentation-method present (bezier-curve (type paint-bezier-curve) pane
                                              (view clim-paint-view) &key)
-  (draw-paint-bezier-curve pane bezier-curve)
+  (with-accessors ((ink ink)
+                   (line-thickness line-thickness)
+                   (filled filledp))
+      bezier-curve
+    (draw-paint-bezier-curve pane bezier-curve :ink ink :line-thickness line-thickness))
   (if (gethash bezier-curve *selected-object-hash*)
       (draw-bezier-curve-selection pane bezier-curve)))
 
@@ -222,14 +220,14 @@
 ;;; need to pass segment events up to parent!
 
 (define-presentation-to-command-translator move-bezier-segment-translator
-    (paint-bezier-curve-segment com-drag-move-object clim-paint
+    (paint-bezier-curve-segment com-move-object clim-paint
            :gesture move-object-gesture
            :menu nil
            :tester ((object presentation event)
                     (declare (ignore presentation event))
                     (paint-object-p object)))
-    (object)
-  (list (bezier-curve object)))
+    (object presentation)
+  (list (output-record-parent presentation)))
 
 (define-presentation-to-command-translator select-bezier-segment-translator
     (paint-bezier-curve-segment com-select-object clim-paint
