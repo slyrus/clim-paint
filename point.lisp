@@ -87,71 +87,42 @@
 ;;;
 ;;; commands
 
-;;; 1. com-drag-move-point
-(define-clim-paint-command (com-drag-move-point)
-    ((paint-point paint-point))
+
+;;;
+;;; dragging / moving
+(defmethod move-dragging ((point paint-point) stream x y)
   (with-accessors ((shapes shapes))
       *application-frame*
-    (with-accessors ((ink ink))
-      paint-point
-      (let ((pane (get-frame-pane *application-frame* 'app)))
-        (multiple-value-bind (startx starty)
-            (stream-pointer-position pane)
-          (multiple-value-bind (x y)
-              (dragging-output*
-                  (pane :finish-on-release t)
-                (lambda (stream x y)
-                  (flet ((connect-neighbors (paint-point)
-                           (let ((neighbors
-                                  (find-lines-containing paint-point shapes)))
-                             (loop for other-line in neighbors
-                                do (let ((other-paint-point
-                                          (if (eq (line-start-point other-line) paint-point)
-                                              (line-end-point other-line)
-                                              (line-start-point other-line))))
-                                     (multiple-value-bind (nx1 ny1)
-                                         (point-position paint-point)
-                                       (multiple-value-bind (nx2 ny2)
-                                           (point-position other-paint-point)
-                                         (draw-line* stream
-                                                     (+ nx1 (- x startx))
-                                                     (+ ny1 (- y starty))
-                                                     nx2
-                                                     ny2
-                                                     :line-thickness 4
-                                                     :ink *drag-color*))))))))
-                    (with-output-to-output-record (stream)
-                      (multiple-value-bind (x1 y1)
-                          (point-position paint-point)
-                        (draw-circle* stream
-                                      (+ x1 (- x startx))
-                                      (+ y1 (- y starty))
-                                      6
-                                      :ink ink :filled t)
-                        (connect-neighbors paint-point))))))
-            ;; FIXME! probably want a better API here
-            (with-accessors ((point %point)) paint-point
-              (with-accessors ((x1 point-x) (y1 point-y) (%p %point)) point
-                (setf point (make-point (+ x1 (- x startx))
-                                        (+ y1 (- y starty))))))))))))
+    (flet ((connect-neighbors (point)
+             (let ((neighbors
+                    (find-lines-containing point shapes)))
+               (loop for other-line in neighbors
+                  do (let ((other-point
+                            (if (eq (line-start-point other-line) point)
+                                (line-end-point other-line)
+                                (line-start-point other-line))))
+                       (multiple-value-bind (nx1 ny1)
+                           (point-position point)
+                         (multiple-value-bind (nx2 ny2)
+                             (point-position other-point)
+                           (draw-line* stream
+                                       (+ nx1 x) (+ ny1 y) nx2 ny2
+                                       :line-thickness 4
+                                       :ink *drag-color*))))))))
+      (with-output-to-output-record (stream)
+        (multiple-value-bind (x1 y1)
+            (point-position point)
+          (with-accessors ((ink ink))
+              point
+            (draw-circle* stream (+ x1 x) (+ y1 y) 6
+                          :ink ink :filled t))
+          (connect-neighbors point))))))
 
-;;; 2. com-move-point
-(define-clim-paint-command (com-move-point)
-    ((presentation presentation))
-  (let ((point (presentation-object presentation)))
-    (com-drag-move-point point)))
+(defmethod move-update ((point paint-point) x y)
+  (multiple-value-bind (x1 y1)
+      (point-position point)
+    (setf (%point point) (make-point (+ x1 x) (+ y1 y)))))
 
-(define-gesture-name move-point-gesture :pointer-button (:left))
-
-(define-presentation-to-command-translator move-point-translator
-    (paint-point com-move-point clim-paint
-           :gesture move-point-gesture
-           :menu nil
-           :tester ((object presentation event)
-                    (declare (ignore presentation event))
-                    (paint-point-p object)))
-    (object presentation)
-  (list presentation))
 
 ;;; 3. com-add-point
 (define-clim-paint-command (com-add-point :name t)
