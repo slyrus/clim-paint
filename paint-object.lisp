@@ -60,7 +60,7 @@
   (let ((object (presentation-object presentation)))
     (com-drag-move-object object)))
 
-(define-gesture-name move-selection-handle-object-gesture :pointer-button (:left :control))
+(define-gesture-name move-selection-handle-object-gesture :pointer-button (:left))
 
 (define-presentation-to-command-translator move-selection-handle-object-translator
     (selection-handle-object com-move-selection-handle-object clim-paint
