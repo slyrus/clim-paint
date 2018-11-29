@@ -153,23 +153,18 @@
 ;;; dragging / moving
 (defmethod move-dragging ((rectangle paint-rectangle) stream dx dy)
   (with-output-to-output-record (stream)
-    (with-accessors ((ink ink)
-                     (filled filledp)
-                     (point-1 %point-1)
-                     (point-2 %point-2))
-        rectangle
-      (multiple-value-bind (x1 y1)
-          (point-position point-1)
-        (multiple-value-bind (x2 y2)
-            (point-position point-2)
-          (draw-rectangle* stream (+ x1 dx) (+ y1 dy) (+ x2 dx) (+ y2 dy)
-                           :ink ink
-                           :filled filled))))))
+    (multiple-value-bind (x1 y1)
+        (point-position (%point-1 rectangle))
+      (multiple-value-bind (x2 y2)
+          (point-position (%point-2 rectangle))
+        (draw-rectangle* stream (+ x1 dx) (+ y1 dy) (+ x2 dx) (+ y2 dy)
+                         :ink (ink rectangle)
+                         :filled (filledp rectangle))))))
 
 (defmethod move-update ((rectangle paint-rectangle) dx dy)
   (with-accessors ((point-1 %point-1)
                    (point-2 %point-2))
-        rectangle
+      rectangle
     (multiple-value-bind (x1 y1)
         (point-position point-1)
       (multiple-value-bind (x2 y2)
