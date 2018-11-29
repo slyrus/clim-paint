@@ -62,53 +62,21 @@
     (if (gethash bezier-curve *selected-object-hash*)
         (draw-bezier-curve-selection pane bezier-curve))))
 
-;;;
-;;; Can't we abstract this away to a single class somehow??
-;;;
+(defmethod move-dragging ((bezier-curve paint-bezier-curve) stream x y)
+  (with-output-to-output-record (stream)
+    (with-translation (stream x y)
+      (with-accessors ((ink ink)
+                       (line-thickness line-thickness)
+                       (filled filledp))
+          bezier-curve
+        (apply #'draw-bezier-design* stream (%bezier-curve bezier-curve)
+               :filled filled
+               :ink ink
+               (append
+                (when line-thickness `(:line-thickness ,line-thickness))))))))
 
-;;; 1. com-drag-move-rectangle
-(define-clim-paint-command (com-drag-move-bezier-curve)
-    ((bezier-curve paint-bezier-curve))
-  (with-accessors ((ink ink)
-                   (line-thickness line-thickness)
-                   (filled filledp))
-      bezier-curve
-    (let ((pane (get-frame-pane *application-frame* 'app)))
-      (multiple-value-bind (startx starty)
-          (stream-pointer-position pane)
-        (multiple-value-bind (x y)
-            (dragging-output*
-                (pane :finish-on-release t)
-              (lambda (stream x y)
-                (with-output-to-output-record (stream)
-                  (with-translation (stream (- x startx) (- y starty))
-                    ;; draw while dragging
-                    (apply #'draw-bezier-design* stream (%bezier-curve bezier-curve)
-                           :filled filled
-                           :ink ink
-                           (append
-                            (when line-thickness `(:line-thickness ,line-thickness))))))))
-          ;; update the bezier values
-          (setf (%bezier-curve bezier-curve)
-                (transform-region (make-translation-transformation
-                                   (- x startx) (- y starty))
-                                  (%bezier-curve bezier-curve))))))))
-
-;;; 2. com-move-bezier-curve
-(define-clim-paint-command (com-move-bezier-curve)
-    ((presentation presentation))
-  (let ((bezier-curve (presentation-object presentation)))
-    (com-drag-move-bezier-curve bezier-curve)))
-
-(define-gesture-name move-bezier-curve-gesture :pointer-button (:left))
-
-(define-presentation-to-command-translator move-bezier-curve-translator
-    (paint-bezier-curve com-move-bezier-curve clim-paint
-           :gesture move-bezier-curve-gesture
-           :menu nil
-           :tester ((object presentation event)
-                    (declare (ignore presentation event))
-                    (paint-bezier-curve-p object)))
-    (object presentation)
-  (list presentation))
+(defmethod move-update ((bezier-curve paint-bezier-curve) x y)
+  (setf (%bezier-curve bezier-curve)
+        (transform-region (make-translation-transformation x y)
+                          (%bezier-curve bezier-curve))))
 
