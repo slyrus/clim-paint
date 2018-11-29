@@ -20,9 +20,9 @@
 
 (defparameter *selected-object-hash* (make-hash-table))
 
-(defgeneric move-dragging (paint-object stream x y))
+(defgeneric move-dragging (paint-object stream dx dy))
 
-(defgeneric move-update (paint-object x y))
+(defgeneric move-update (paint-object dx dy))
 
 (define-clim-paint-command (com-drag-move-object)
     ((object paint-object))

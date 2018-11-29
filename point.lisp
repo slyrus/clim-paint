@@ -90,7 +90,7 @@
 
 ;;;
 ;;; dragging / moving
-(defmethod move-dragging ((point paint-point) stream x y)
+(defmethod move-dragging ((point paint-point) stream dx dy)
   (with-accessors ((shapes shapes))
       *application-frame*
     (flet ((connect-neighbors (point)
@@ -106,7 +106,7 @@
                          (multiple-value-bind (nx2 ny2)
                              (point-position other-point)
                            (draw-line* stream
-                                       (+ nx1 x) (+ ny1 y) nx2 ny2
+                                       (+ nx1 dx) (+ ny1 dy) nx2 ny2
                                        :line-thickness 4
                                        :ink *drag-color*))))))))
       (with-output-to-output-record (stream)
@@ -114,7 +114,7 @@
             (point-position point)
           (with-accessors ((ink ink))
               point
-            (draw-circle* stream (+ x1 x) (+ y1 y) 6
+            (draw-circle* stream (+ x1 dx) (+ y1 dy) 6
                           :ink ink :filled t))
           (connect-neighbors point))))))
 

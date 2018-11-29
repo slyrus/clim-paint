@@ -151,7 +151,7 @@
 
 ;;;
 ;;; dragging / moving
-(defmethod move-dragging ((rectangle paint-rectangle) stream x y)
+(defmethod move-dragging ((rectangle paint-rectangle) stream dx dy)
   (with-output-to-output-record (stream)
     (with-accessors ((ink ink)
                      (filled filledp)
@@ -162,11 +162,11 @@
           (point-position point-1)
         (multiple-value-bind (x2 y2)
             (point-position point-2)
-          (draw-rectangle* stream (+ x1 x) (+ y1 y) (+ x2 x) (+ y2 y)
+          (draw-rectangle* stream (+ x1 dx) (+ y1 dy) (+ x2 dx) (+ y2 dy)
                            :ink ink
                            :filled filled))))))
 
-(defmethod move-update ((rectangle paint-rectangle) x y)
+(defmethod move-update ((rectangle paint-rectangle) dx dy)
   (with-accessors ((point-1 %point-1)
                    (point-2 %point-2))
         rectangle
@@ -174,8 +174,8 @@
         (point-position point-1)
       (multiple-value-bind (x2 y2)
           (point-position point-2)
-        (setf point-1 (make-point (+ x1 x) (+ y1 y))
-              point-2 (make-point (+ x2 x) (+ y2 y)))))))
+        (setf point-1 (make-point (+ x1 dx) (+ y1 dy))
+              point-2 (make-point (+ x2 dx) (+ y2 dy)))))))
 
 
 ;;; 3. selection handle dragging

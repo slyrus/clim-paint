@@ -64,9 +64,9 @@
 
 ;;;
 ;;; dragging / moving
-(defmethod move-dragging ((bezier-curve paint-bezier-curve) stream x y)
+(defmethod move-dragging ((bezier-curve paint-bezier-curve) stream dx dy)
   (with-output-to-output-record (stream)
-    (with-translation (stream x y)
+    (with-translation (stream dx dy)
       (with-accessors ((ink ink)
                        (line-thickness line-thickness)
                        (filled filledp))
@@ -77,8 +77,8 @@
                (append
                 (when line-thickness `(:line-thickness ,line-thickness))))))))
 
-(defmethod move-update ((bezier-curve paint-bezier-curve) x y)
+(defmethod move-update ((bezier-curve paint-bezier-curve) dx dy)
   (setf (%bezier-curve bezier-curve)
-        (transform-region (make-translation-transformation x y)
+        (transform-region (make-translation-transformation dx dy)
                           (%bezier-curve bezier-curve))))
 
