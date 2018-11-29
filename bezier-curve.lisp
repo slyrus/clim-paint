@@ -31,7 +31,7 @@
 (defun draw-bezier-curve-selection (pane bezier-curve &key (ink *selection-color*)
                                                            (filled nil))
   (let* ((curve (%bezier-curve bezier-curve))
-         (segments (mcclim-bezier::%segments curve)))
+         (segments (mcclim-bezier:segments curve)))
     (map nil (lambda (segment)
                (draw-line pane
                           (slot-value segment 'mcclim-bezier::p0)
