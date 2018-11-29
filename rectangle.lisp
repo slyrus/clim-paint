@@ -149,6 +149,8 @@
                                        (+ x2 *rectangle-highlight-margin* 2)
                                        (+ y2 *rectangle-highlight-margin* 2)))))))))))
 
+;;;
+;;; dragging / moving
 (defmethod move-dragging ((rectangle paint-rectangle) stream x y)
   (with-output-to-output-record (stream)
     (with-accessors ((ink ink)
@@ -160,11 +162,7 @@
           (point-position point-1)
         (multiple-value-bind (x2 y2)
             (point-position point-2)
-          (draw-rectangle* stream
-                           (+ x1 x)
-                           (+ y1 y)
-                           (+ x2 x)
-                           (+ y2 y)
+          (draw-rectangle* stream (+ x1 x) (+ y1 y) (+ x2 x) (+ y2 y)
                            :ink ink
                            :filled filled))))))
 
