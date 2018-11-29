@@ -2,8 +2,7 @@
 (in-package :clim-paint)
 
 (defclass paint-bezier-curve (paint-object)
-  ((bezier-curve :initarg :bezier-curve :accessor %bezier-curve)
-   (control-points :initarg :control-points :accessor %control-points)
+  ((control-points :initarg :control-points :accessor %control-points)
    (line-thickness :initarg :line-thickness :accessor line-thickness :initform 1)
    (filled :initarg :filled :accessor filledp :initform nil)))
 
@@ -13,11 +12,21 @@
 (defun control-point-count (bezier-curve)
   (flexichain:nb-elements (%control-points bezier-curve)))
 
-(defun update-bezier-curve (bezier-curve)
-  (let ((seq (loop for i below (control-point-count bezier-curve)
-                collect (control-point bezier-curve i))))
-    (setf (%bezier-curve bezier-curve)
-          (make-bezier-curve seq))))
+(defun %make-bezier-curve (bezier-curve)
+  (make-bezier-curve
+   (loop for i below (control-point-count bezier-curve)
+      collect (control-point bezier-curve i))))
+
+(defun draw-paint-bezier-curve (pane bezier-curve &key ink)
+  (with-accessors ((line-thickness line-thickness)
+                   (filledp filledp)
+                   (object-ink ink))
+      bezier-curve
+    (apply #'draw-bezier-design* pane (%make-bezier-curve bezier-curve)
+           :filled filledp
+           :ink (or ink object-ink)
+           (append
+            (when line-thickness `(:line-thickness ,line-thickness))))))
 
 (defgeneric paint-bezier-curve-p (object)
   (:method ((object t)) nil)
@@ -29,7 +38,6 @@
                                      (filled nil filled-supplied-p)
                                      (line-thickness nil line-thickness-supplied-p))
   (apply #'make-instance 'paint-bezier-curve
-         :bezier-curve (make-bezier-curve point-seq)
          :control-points (make-instance 'flexichain:standard-flexichain
                                         :initial-contents point-seq)
          (append
@@ -67,33 +75,25 @@
 
 (define-presentation-method present (bezier-curve (type paint-bezier-curve) pane
                                              (view clim-paint-view) &key)
-  (with-accessors ((curve %bezier-curve)
-                   (line-thickness line-thickness)
-                   (filledp filledp)
-                   (ink ink))
-      bezier-curve
-    (apply #'draw-bezier-design* pane curve
-           :filled filledp
-           :ink ink
-           (append
-            (when line-thickness `(:line-thickness ,line-thickness))))
-    (if (gethash bezier-curve *selected-object-hash*)
-        (draw-bezier-curve-selection pane bezier-curve))))
+  (draw-paint-bezier-curve pane bezier-curve)
+  (if (gethash bezier-curve *selected-object-hash*)
+      (draw-bezier-curve-selection pane bezier-curve)))
+
+(define-presentation-method highlight-presentation
+    ((type paint-bezier-curve) (record bezier-curve-presentation) stream state)
+  (let ((bezier-curve (presentation-object record)))
+    (case state
+      (:highlight
+       (draw-paint-bezier-curve stream bezier-curve :ink *highlight-color*))
+      (:unhighlight
+       (draw-paint-bezier-curve stream bezier-curve)))))
 
 ;;;
 ;;; dragging / moving
 (defmethod move-dragging ((bezier-curve paint-bezier-curve) stream dx dy)
   (with-output-to-output-record (stream)
     (with-translation (stream dx dy)
-      (with-accessors ((ink ink)
-                       (line-thickness line-thickness)
-                       (filled filledp))
-          bezier-curve
-        (apply #'draw-bezier-design* stream (%bezier-curve bezier-curve)
-               :filled filled
-               :ink ink
-               (append
-                (when line-thickness `(:line-thickness ,line-thickness))))))))
+      (draw-paint-bezier-curve stream bezier-curve))))
 
 (defmethod move-update ((bezier-curve paint-bezier-curve) dx dy)
   (with-accessors ((ink ink)
@@ -106,7 +106,7 @@
                (multiple-value-bind (x y)
                    (point-position (control-point bezier-curve i))
                  (make-point (+ x dx) (+ y dy)))))
-    (update-bezier-curve bezier-curve)))
+    #+nil (update-bezier-curve bezier-curve)))
 
 ;;;
 ;;; selection handle dragging / moving
@@ -133,5 +133,41 @@
         (point-position (control-point bezier-curve index))
       (setf (control-point bezier-curve index)
             (make-point (+ x0 dx) (+ y0 dy))))
-    (update-bezier-curve bezier-curve)))
+    #+nil (update-bezier-curve bezier-curve)))
+
+
+;;; split a bezier curve
+
+(define-clim-paint-command (com-drag-split-bezier-curve)
+    ((bezier-curve paint-bezier-curve) (presentation presentation) (frame frame))
+  (declare (ignore presentation))
+  (with-accessors ((ink ink)
+                   (shapes shapes))
+      frame
+    (let ((pane (get-frame-pane frame 'app))
+          (new-ink (or (ink bezier-curve) ink)))
+      (multiple-value-bind (x y)
+          (dragging-output (pane :finish-on-release t)
+            (draw-circle pane (get-pointer-position pane) 6
+                         :ink new-ink :filled t))
+        ;; here's where we need to find out which segment in the
+        ;; bezier curve was actually clicked on...
+        ))))
+
+;;; com-split-line
+(define-clim-paint-command (com-split-bezier-curve)
+    ((presentation t))
+  (let ((bezier-curve (presentation-object presentation)))
+    (com-drag-split-bezier-curve bezier-curve presentation *application-frame*)))
+
+(define-gesture-name split-bezier-curve-gesture :pointer-button (:left :control))
+
+(define-presentation-to-command-translator split-bezier-curve-translator
+    (paint-bezier-curve com-split-bezier-curve clim-paint
+          :gesture split-bezier-curve-gesture
+          :menu nil
+          :tester ((object)
+                   t))
+    (object presentation)
+  (list presentation))
 
