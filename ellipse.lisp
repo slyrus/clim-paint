@@ -264,73 +264,44 @@
                                      (+ radius-2-dx *ellipse-highlight-margin* 1)
                                      (+ radius-2-dy *ellipse-highlight-margin* 1)))))))))))
 
-;;; 1. com-drag-move-ellipse
-(define-clim-paint-command (com-drag-move-ellipse)
-    ((paint-ellipse paint-ellipse))
-  (with-accessors ((ink ink)
-                   (filled filledp))
-      paint-ellipse
-    (let ((pane (get-frame-pane *application-frame* 'app)))
-      (multiple-value-bind (startx starty)
-          (stream-pointer-position pane)
-        (multiple-value-bind (x y)
-            (dragging-output*
-                (pane :finish-on-release t)
-              (lambda (stream x y)
-                (with-output-to-output-record (stream)
-                  (with-accessors ((center-point center-point)
-                                   (radius-1-dx radius-1-dx)
-                                   (radius-1-dy radius-1-dy)
-                                   (radius-2-dx radius-2-dx)
-                                   (radius-2-dy radius-2-dy)
-                                   (start-angle start-angle)
-                                   (end-angle end-angle)
-                                   (filledp filledp)
-                                   (ink ink)
-                                   (line-thickness line-thickness))
-                      paint-ellipse
-                    (multiple-value-bind (x1 y1)
-                        (point-position center-point)
-                      (draw-ellipse* stream
-                                     (+ x1 (- x startx))
-                                     (+ y1 (- y starty))
-                                     radius-1-dx
-                                     radius-1-dy
-                                     radius-2-dx
-                                     radius-2-dy
-                                     :start-angle start-angle
-                                     :end-angle end-angle
-                                     :ink ink
-                                     :filled filled
-                                     :line-thickness line-thickness))))))
-          ;; FIXME! probably want a better API here
-          (with-accessors ((center-point center-point))
-              paint-ellipse
-            (multiple-value-bind (x1 y1)
-                (point-position center-point)
-              (setf center-point (make-point
-                                  (+ x1 (- x startx))
-                                  (+ y1 (- y starty)))))))))))
+;;;
+;;; dragging / moving
+(defmethod move-dragging ((ellipse paint-ellipse) stream dx dy)
+  (with-output-to-output-record (stream)
+    (with-accessors ((center-point center-point)
+                     (radius-1-dx radius-1-dx)
+                     (radius-1-dy radius-1-dy)
+                     (radius-2-dx radius-2-dx)
+                     (radius-2-dy radius-2-dy)
+                     (start-angle start-angle)
+                     (end-angle end-angle)
+                     (filledp filledp)
+                     (ink ink)
+                     (line-thickness line-thickness))
+        ellipse
+      (multiple-value-bind (x1 y1)
+          (point-position center-point)
+        (draw-ellipse* stream (+ x1 dx) (+ y1 dy)
+                       radius-1-dx radius-1-dy
+                       radius-2-dx radius-2-dy
+                       :start-angle start-angle
+                       :end-angle end-angle
+                       :ink ink
+                       :filled filledp
+                       :line-thickness line-thickness)))))
 
-;;; 2. com-move-ellipse
-(define-clim-paint-command (com-move-ellipse)
-    ((presentation presentation))
-  (let ((ellipse (presentation-object presentation)))
-    (com-drag-move-ellipse ellipse)))
+(defmethod move-update ((ellipse paint-ellipse) dx dy)
+  (with-accessors ((center-point center-point))
+      ellipse
+    (multiple-value-bind (x1 y1)
+        (point-position center-point)
+      (setf center-point (make-point
+                          (+ x1 dx)
+                          (+ y1 dy))))))
 
-(define-gesture-name move-ellipse-gesture :pointer-button (:left))
 
-(define-presentation-to-command-translator move-ellipse-translator
-    (paint-ellipse com-move-ellipse clim-paint
-           :gesture move-ellipse-gesture
-           :menu nil
-           :tester ((object presentation event)
-                    (declare (ignore presentation event))
-                    (paint-ellipse-p object)))
-    (object presentation)
-  (list presentation))
-
-;;; 3. dragging
+;;;
+;;; dragging selection handles
 (define-clim-paint-command (com-drag-move-ellipse-center-selection-handle)
     ((ellipse-center-handle-point ellipse-center-handle-point))
 
@@ -515,8 +486,8 @@
                     (incf radius-2-dx (- x startx))
                     (incf radius-2-dy (- y starty)))))))))))
 
-;;; 4. move selection commands
-
+;;;
+;;; move selection handles
 (define-clim-paint-command (com-move-ellipse-center-selection-handle)
     ((presentation presentation))
   (let ((object (presentation-object presentation)))
