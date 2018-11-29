@@ -18,4 +18,5 @@
                (:file "line")
                (:file "rectangle")
                (:file "ellipse")
+               (:file "bezier-curve")
                (:file "clim-paint")))
