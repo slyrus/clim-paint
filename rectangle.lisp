@@ -115,13 +115,6 @@
 ;;; highlighting
 (defparameter *rectangle-highlight-margin* 2)
 
-
-#+nil
-(multiple-value-bind (x1 y1)
-    (point-position (%point-1 rectangle))
-  (multiple-value-bind (x2 y2)
-      (point-position (%point-2 rectangle))))
-
 (define-presentation-method highlight-presentation
     ((type paint-rectangle) (record rectangle-presentation) stream state)
   (let ((rectangle (presentation-object record)))
