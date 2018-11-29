@@ -124,6 +124,16 @@
   (if (gethash bezier-curve *selected-object-hash*)
       (draw-bezier-curve-selection pane bezier-curve)))
 
+;;; highlighting
+(define-presentation-method highlight-presentation
+    ((type paint-bezier-curve-segment) (record bezier-curve-segment-presentation) stream state)
+  (let ((parent (output-record-parent record)))
+    (funcall-presentation-generic-function highlight-presentation
+                                           (type-of (presentation-object parent))
+                                           parent
+                                           stream
+                                           state)))
+
 (define-presentation-method highlight-presentation
     ((type paint-bezier-curve) (record bezier-curve-presentation) stream state)
   (let ((bezier-curve (presentation-object record)))
