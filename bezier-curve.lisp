@@ -108,60 +108,30 @@
                  (make-point (+ x dx) (+ y dy)))))
     (update-bezier-curve bezier-curve)))
 
-
-;;; 3. selection handle dragging
-(define-clim-paint-command (com-drag-move-bezier-curve-selection-handle)
-    ((bezier-curve-handle-point bezier-curve-handle-point))
+;;;
+;;; selection handle dragging / moving
+(defmethod move-dragging ((bezier-curve-handle-point bezier-curve-handle-point) stream dx dy)
   (with-accessors ((bezier-curve paint-object)
                    (index control-points-index))
       bezier-curve-handle-point
-    (with-accessors ((ink ink)
-                     (line-thickness line-thickness)
-                     (filled filledp))
-        bezier-curve
-      (let ((pane (get-frame-pane *application-frame* 'app)))
-        (multiple-value-bind (startx starty)
-            (stream-pointer-position pane)
-          (multiple-value-bind (x y)
-              (dragging-output*
-                  (pane :finish-on-release t)
-                (lambda (stream x y)
-                  (let ((dx (- x startx))
-                        (dy (- y starty)))
-                    (with-output-to-output-record (stream)
-                      (multiple-value-bind (x0 y0)
-                          (point-position (control-point bezier-curve index))
-                        (draw-circle* stream
-                                        (+ x0 dx)
-                                        (+ y0 dy)
-                                        (radius bezier-curve-handle-point)
-                                        :ink (ink bezier-curve-handle-point)
-                                        :filled (filledp bezier-curve-handle-point)
-                                        :line-thickness 2))))))
-            ;; FIXME! probably want a better API here
-            (let ((dx (- x startx))
-                  (dy (- y starty)))
-              (multiple-value-bind (x0 y0)
-                  (point-position (control-point bezier-curve index))
-                (setf (control-point bezier-curve index)
-                      (make-point (+ x0 dx) (+ y0 dy))))
-              (update-bezier-curve bezier-curve))))))))
+    (with-output-to-output-record (stream)
+      (multiple-value-bind (x0 y0)
+          (point-position (control-point bezier-curve index))
+        (draw-circle* stream
+                      (+ x0 dx)
+                      (+ y0 dy)
+                      (radius bezier-curve-handle-point)
+                      :ink (ink bezier-curve-handle-point)
+                      :filled (filledp bezier-curve-handle-point)
+                      :line-thickness 2)))))
 
-;;; 4. com-move-bezier-curve-selection-handle
-(define-clim-paint-command (com-move-bezier-curve-selection-handle)
-    ((presentation presentation))
-  (let ((object (presentation-object presentation)))
-    (com-drag-move-bezier-curve-selection-handle object)))
+(defmethod move-update ((bezier-curve-handle-point bezier-curve-handle-point) dx dy)
+  (with-accessors ((bezier-curve paint-object)
+                   (index control-points-index))
+      bezier-curve-handle-point
+    (multiple-value-bind (x0 y0)
+        (point-position (control-point bezier-curve index))
+      (setf (control-point bezier-curve index)
+            (make-point (+ x0 dx) (+ y0 dy))))
+    (update-bezier-curve bezier-curve)))
 
-(define-gesture-name move-bezier-curve-selection-handle-gesture :pointer-button (:left :control))
-
-(define-presentation-to-command-translator move-bezier-curve-selection-handle-translator
-    (bezier-curve-handle-point com-move-bezier-curve-selection-handle clim-paint
-                            :gesture move-bezier-curve-selection-handle-gesture
-                            :menu nil
-                            #+nil :tester
-                            #+nil ((object presentation event)
-                                   (declare (ignore presentation event))
-                                   (selection-handle-object-p object)))
-    (object presentation)
-  (list presentation))

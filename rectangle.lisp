@@ -173,71 +173,48 @@
               point-2 (make-point (+ x2 dx) (+ y2 dy)))))))
 
 
-;;; 3. selection handle dragging
+;;; 3. selection handle dragging / moving
 (defun rectangle-other-point (rectangle point)
   (if (eql (%point-1 rectangle) point)
       (%point-2 rectangle)
       (%point-1 rectangle)))
 
-(define-clim-paint-command (com-drag-move-rectangle-selection-handle)
-    ((rectangle-handle-point rectangle-handle-point))
+(defmethod move-dragging ((rectangle-handle-point rectangle-handle-point) stream dx dy)
+  (with-output-to-output-record (stream)
+    (with-accessors ((rectangle paint-object)
+                     (my-point rectangle-point))
+        rectangle-handle-point
+      (with-accessors ((ink ink)
+                       (filled filledp))
+          rectangle
+        (multiple-value-bind (near-x near-y)
+            (point-position my-point)
+          (multiple-value-bind (other-x other-y)
+              (point-position (rectangle-other-point rectangle my-point))
+            (draw-rectangle* stream
+                             (+ near-x dx) (+ near-y dy)
+                             other-x other-y
+                             :ink ink :filled filled))))
+      (multiple-value-bind (x1 y1)
+          (point-position (%point rectangle-handle-point))
+        (draw-circle* stream (+ x1 dx) (+ y1 dy)
+                      (radius rectangle-handle-point)
+                      :ink (ink rectangle-handle-point)
+                      :filled (filledp rectangle-handle-point)
+                      :line-thickness 2)))))
+
+(defmethod move-update ((rectangle-handle-point rectangle-handle-point) dx dy)
   (with-accessors ((rectangle paint-object)
                    (my-point rectangle-point))
       rectangle-handle-point
-    (with-accessors ((ink ink)
-                     (filled filledp))
-        rectangle
-      (let ((pane (get-frame-pane *application-frame* 'app)))
-        (multiple-value-bind (startx starty)
-            (stream-pointer-position pane)
-          (multiple-value-bind (near-x near-y)
-              (point-position my-point)
-            (multiple-value-bind (other-x other-y)
-                (point-position (rectangle-other-point rectangle my-point))
-              (multiple-value-bind (x y)
-                  (dragging-output*
-                      (pane :finish-on-release t)
-                    (lambda (stream x y)
-                      (with-output-to-output-record (stream)
-                        (draw-rectangle* stream
-                                         (+ near-x (- x startx))
-                                         (+ near-y (- y starty))
-                                         other-x
-                                         other-y
-                                         :ink ink
-                                         :filled filled)
-                        (multiple-value-bind (x1 y1)
-                            (point-position (%point rectangle-handle-point))
-                          (draw-circle* stream
-                                        (+ x1 (- x startx))
-                                        (+ y1 (- y starty))
-                                        (radius rectangle-handle-point)
-                                        :ink (ink rectangle-handle-point)
-                                        :filled (filledp rectangle-handle-point)
-                                        :line-thickness 2)))))
-                ;; FIXME! probably want a better API here
-                (setf (%point-1 rectangle) (make-point
-                                            (+ near-x (- x startx))
-                                            (+ near-y (- y starty)))
-                      (%point-2 rectangle) (make-point
-                                            other-x
-                                            other-y))))))))))
+    (multiple-value-bind (near-x near-y)
+        (point-position my-point)
+      (multiple-value-bind (other-x other-y)
+          (point-position (rectangle-other-point rectangle my-point))
+        (setf (%point-1 rectangle) (make-point
+                                    (+ near-x dx)
+                                    (+ near-y dy))
+              (%point-2 rectangle) (make-point
+                                    other-x
+                                    other-y))))))
 
-;;; 4. com-move-rectangle-selection-handle
-(define-clim-paint-command (com-move-rectangle-selection-handle)
-    ((presentation presentation))
-  (let ((object (presentation-object presentation)))
-    (com-drag-move-rectangle-selection-handle object)))
-
-(define-gesture-name move-rectangle-selection-handle-gesture :pointer-button (:left :control))
-
-(define-presentation-to-command-translator move-rectangle-selection-handle-translator
-    (rectangle-handle-point com-move-rectangle-selection-handle clim-paint
-                            :gesture move-rectangle-selection-handle-gesture
-                            :menu nil
-                            #+nil :tester
-                            #+nil ((object presentation event)
-                                   (declare (ignore presentation event))
-                                   (selection-handle-object-p object)))
-    (object presentation)
-  (list presentation))

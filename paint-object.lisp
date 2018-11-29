@@ -24,6 +24,7 @@
 
 (defgeneric move-update (paint-object dx dy))
 
+;;; moving objects
 (define-clim-paint-command (com-drag-move-object)
     ((object paint-object))
   (let ((pane (get-frame-pane *application-frame* 'app)))
@@ -53,3 +54,21 @@
     (object presentation)
   (list presentation))
 
+;;; moving object selection handles
+(define-clim-paint-command (com-move-selection-handle-object)
+    ((presentation presentation))
+  (let ((object (presentation-object presentation)))
+    (com-drag-move-object object)))
+
+(define-gesture-name move-selection-handle-object-gesture :pointer-button (:left :control))
+
+(define-presentation-to-command-translator move-selection-handle-object-translator
+    (selection-handle-object com-move-selection-handle-object clim-paint
+                             :gesture move-selection-handle-object-gesture
+                             :menu nil
+                             :tester
+                             ((object presentation event)
+                              (declare (ignore presentation event))
+                              (selection-handle-object-p object)))
+    (object presentation)
+  (list presentation))
