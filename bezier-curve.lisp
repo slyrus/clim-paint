@@ -7,6 +7,18 @@
    (line-thickness :initarg :line-thickness :accessor line-thickness :initform 1)
    (filled :initarg :filled :accessor filledp :initform nil)))
 
+(defmacro control-point (bezier-curve index)
+  `(flexichain:element* (%control-points ,bezier-curve) ,index))
+
+(defun control-point-count (bezier-curve)
+  (flexichain:nb-elements (%control-points bezier-curve)))
+
+(defun update-bezier-curve (bezier-curve)
+  (let ((seq (loop for i below (control-point-count bezier-curve)
+                collect (control-point bezier-curve i))))
+    (setf (%bezier-curve bezier-curve)
+          (make-bezier-curve seq))))
+
 (defgeneric paint-bezier-curve-p (object)
   (:method ((object t)) nil)
   (:method ((object paint-bezier-curve)) t)
@@ -18,7 +30,8 @@
                                      (line-thickness nil line-thickness-supplied-p))
   (apply #'make-instance 'paint-bezier-curve
          :bezier-curve (make-bezier-curve point-seq)
-         :control-points (make-array (length point-seq) :initial-contents point-seq)
+         :control-points (make-instance 'flexichain:standard-flexichain
+                                        :initial-contents point-seq)
          (append
           (when ink-supplied-p `(:ink , ink))
           (when filled-supplied-p `(:filled ,filled))
@@ -33,20 +46,12 @@
 (defclass bezier-curve-handle-point (selection-handle-point)
   ((index :initarg :index :accessor control-points-index)))
 
-(defun segment-control-point (segment index)
-  (ecase index
-    (0 (slot-value segment 'mcclim-bezier::p0))
-    (1 (slot-value segment 'mcclim-bezier::p1))
-    (2 (slot-value segment 'mcclim-bezier::p2))
-    (3 (slot-value segment 'mcclim-bezier::p3))))
-
-
 
 (defun draw-bezier-curve-selection (pane bezier-curve &key (ink *selection-color*)
                                                            (filled nil))
   (loop for p1 = nil then p0
-     for p0 across (%control-points bezier-curve)
-     for i from 0
+     for i from 0 below (control-point-count bezier-curve)
+     for p0 = (control-point bezier-curve i)
      do (present (make-instance 'bezier-curve-handle-point
                                 :paint-object bezier-curve
                                 :point p0
@@ -82,8 +87,7 @@
     (with-translation (stream dx dy)
       (with-accessors ((ink ink)
                        (line-thickness line-thickness)
-                       (filled filledp)
-                       (control-points %control-points))
+                       (filled filledp))
           bezier-curve
         (apply #'draw-bezier-design* stream (%bezier-curve bezier-curve)
                :filled filled
@@ -94,18 +98,15 @@
 (defmethod move-update ((bezier-curve paint-bezier-curve) dx dy)
   (with-accessors ((ink ink)
                    (line-thickness line-thickness)
-                   (filled filledp)
-                   (control-points %control-points))
+                   (filled filledp))
       bezier-curve
-    (setf control-points
-          (map (type-of control-points)
-               (lambda (point)
-                 (multiple-value-bind (x y)
-                     (point-position point)
-                   (make-point (+ x dx) (+ y dy))))
-               control-points))
-    (setf (%bezier-curve bezier-curve)
-          (make-bezier-curve control-points))))
+    (loop for i from 0 below (control-point-count bezier-curve)
+       do 
+         (setf (control-point bezier-curve i)
+               (multiple-value-bind (x y)
+                   (point-position (control-point bezier-curve i))
+                 (make-point (+ x dx) (+ y dy)))))
+    (update-bezier-curve bezier-curve)))
 
 
 ;;; 3. selection handle dragging
@@ -116,8 +117,7 @@
       bezier-curve-handle-point
     (with-accessors ((ink ink)
                      (line-thickness line-thickness)
-                     (filled filledp)
-                     (control-points %control-points))
+                     (filled filledp))
         bezier-curve
       (let ((pane (get-frame-pane *application-frame* 'app)))
         (multiple-value-bind (startx starty)
@@ -130,7 +130,7 @@
                         (dy (- y starty)))
                     (with-output-to-output-record (stream)
                       (multiple-value-bind (x0 y0)
-                          (point-position (aref control-points index))
+                          (point-position (control-point bezier-curve index))
                         (draw-circle* stream
                                         (+ x0 dx)
                                         (+ y0 dy)
@@ -142,11 +142,10 @@
             (let ((dx (- x startx))
                   (dy (- y starty)))
               (multiple-value-bind (x0 y0)
-                  (point-position (aref control-points index))
-                (setf (aref control-points index)
+                  (point-position (control-point bezier-curve index))
+                (setf (control-point bezier-curve index)
                       (make-point (+ x0 dx) (+ y0 dy))))
-              (setf (%bezier-curve bezier-curve)
-                    (make-bezier-curve control-points)))))))))
+              (update-bezier-curve bezier-curve))))))))
 
 ;;; 4. com-move-bezier-curve-selection-handle
 (define-clim-paint-command (com-move-bezier-curve-selection-handle)

@@ -5,7 +5,7 @@
   :author "Cyrus Harmon <ch-lisp@bobobeach.com>"
   :license  "BSD"
   :version "0.0.1"
-  :depends-on (:mcclim)
+  :depends-on (:mcclim :flexichain)
   :serial t
   :components ((:file "package")
                (:file "utilities")
