@@ -111,7 +111,8 @@
                                   :segment seg
                                   :ink ink
                                   :line-thickness line-thickness)
-                   'paint-bezier-curve-segment))))
+                   'paint-bezier-curve-segment
+                   :record-type 'bezier-curve-segment-presentation))))
 
 (define-presentation-method present (bezier-curve (type paint-bezier-curve) pane
                                              (view clim-paint-view) &key)
