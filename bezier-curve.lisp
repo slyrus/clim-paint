@@ -62,6 +62,8 @@
     (if (gethash bezier-curve *selected-object-hash*)
         (draw-bezier-curve-selection pane bezier-curve))))
 
+;;;
+;;; dragging / moving
 (defmethod move-dragging ((bezier-curve paint-bezier-curve) stream x y)
   (with-output-to-output-record (stream)
     (with-translation (stream x y)
