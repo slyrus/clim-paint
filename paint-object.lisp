@@ -10,19 +10,6 @@
   (:method ((object paint-object)) t)
   (:documentation "Checking for class paint-object"))
 
-;;;
-;;; some special variables to be used for drawing/dragging
-(defparameter *highlight-color* +orange+)
-
-(defparameter *selection-color* +red+)
-
-(defparameter *drag-color* +green+)
-
-(defparameter *selected-object-hash* (make-hash-table))
-
-(defgeneric move-dragging (paint-object stream dx dy))
-
-(defgeneric move-update (paint-object dx dy))
 
 ;;; moving objects
 (define-clim-paint-command (com-drag-move-object)

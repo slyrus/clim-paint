@@ -1,6 +1,24 @@
 
 (in-package :clim-paint)
 
+;;;
+;;; some special variables to be used for drawing/dragging
+(defparameter *background-color* +black+)
+
+(defparameter *foreground-color* +white+)
+
+(defparameter *highlight-color* +orange+)
+
+(defparameter *selection-color* +red+)
+
+(defparameter *drag-color* +green+)
+
+(defparameter *selected-object-hash* (make-hash-table))
+
+(defgeneric move-dragging (paint-object stream dx dy))
+
+(defgeneric move-update (paint-object dx dy))
+
 ;;; I think this is currently unused.
 (defun find-top-level-output-record (record)
   (when record
