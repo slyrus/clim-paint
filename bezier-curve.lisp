@@ -373,3 +373,16 @@
                            t))
     (object presentation)
   (list (output-record-parent presentation)))
+
+;;; com-add-bezier-curve
+(define-clim-paint-command (com-add-bezier-curve :name t)
+    (&key
+     (ink color))
+  (with-accessors ((shapes shapes)
+                   (default-ink ink))
+      *application-frame*
+    (let ((bezier-curve (make-paint-bezier-curve (coord-seq-to-point-seq
+                                  (list 20 250 20 180 90 210 90 270 90 320 140 310 140 240))
+                                 :ink (or ink default-ink)
+                                 :line-thickness 4)))
+      (push bezier-curve shapes))))

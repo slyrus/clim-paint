@@ -485,3 +485,14 @@
             (incf radius-2-dy dy))))))
 
 
+;;; 1. com-add-ellipse
+(define-clim-paint-command (com-add-ellipse :name t)
+    (&key
+     (ink color))
+  (with-accessors ((shapes shapes)
+                   (default-ink ink))
+      *application-frame*
+    (let ((ellipse (make-paint-ellipse (make-paint-point 100 100) 50 0 0 20
+                                    :ink (or ink default-ink))))
+      (push ellipse shapes))))
+
