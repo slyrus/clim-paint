@@ -106,7 +106,7 @@
                             :filled nil)
         (make-paint-bezier-curve (coord-seq-to-point-seq
                                   (list 20 150 20 80 90 110 90 170 90 220 140 210 140 140))
-                                 :ink +dark-blue+
+                                 :ink +light-blue+
                                  :line-thickness 4)))
 
 (defun clim-paint (&key (new-process t))

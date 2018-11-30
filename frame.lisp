@@ -13,6 +13,7 @@
   (:menu-bar clim-paint-menubar)
   (:panes
    (app :application
+        :background *background-color*
         :height 600 :width 800
         :display-function #'clim-paint-display
         :default-view (make-instance 'clim-paint-view))

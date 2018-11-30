@@ -41,7 +41,7 @@
 
 (defparameter *point-selection-width* 10)
 
-(defun draw-point-selection (pane point &key (ink +black+)
+(defun draw-point-selection (pane point &key (ink *foreground-color*)
                                              (radius 10)
                                              (filled nil))
   (declare (ignore pane))

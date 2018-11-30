@@ -53,7 +53,7 @@
 
 (defparameter *rectangle-selection-width* 4)
 
-(defun draw-rectangle-selection (pane rectangle &key (ink +black+)
+(defun draw-rectangle-selection (pane rectangle &key (ink *foreground-color*)
                                                      (radius 8)
                                                      (filled nil))
   (multiple-value-bind (x1 y1)

@@ -68,7 +68,7 @@
                  :record-type 'selection-handle-point-presentation
                  :single-box t)
        (when p1
-         (draw-line pane p0 p1 :ink +black+ :line-dashes t))))
+         (draw-line pane p0 p1 :ink *foreground-color* :line-dashes t))))
 
 (defun draw-paint-bezier-curve-segment (pane bezier-curve-segment)
   (with-accessors ((segment segment)
