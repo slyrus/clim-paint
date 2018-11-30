@@ -122,16 +122,16 @@
 
 ;;; 1. com-add-line
 (define-clim-paint-command (com-add-line :name t)
-    (#+nil (point1 point :prompt "Point 1")
-           #+nil (point2 point :prompt "Point 2")
+    ((point1 point :prompt "Point 1")
+     (point2 point :prompt "Point 2")
      &key
      (ink color))
   (with-accessors ((shapes shapes)
                    (default-ink ink))
       *application-frame*
-    #+nil (when (and point1 point2))
-    (let ((line (make-paint-line (make-paint-point 100 100 :ink (or ink default-ink))
-                                 (make-paint-point 200 200 :ink (or ink default-ink))
+    (when (and point1 point2))
+    (let ((line (make-paint-line point1
+                                 point2
                                  :ink (or ink default-ink))))
       (push line shapes))))
 
