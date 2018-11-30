@@ -49,9 +49,10 @@
 
 (define-presentation-type bezier-curve-segment-presentation ())
 
-(defclass bezier-curve-handle-point (selection-handle-point)
+(defclass bezier-curve-point (selection-handle-point)
   ((index :initarg :index :accessor control-points-index)))
 
+(defclass bezier-curve-point-on-curve (bezier-curve-point) ())
 
 (defun draw-bezier-curve-selection (pane bezier-curve &key (ink *selection-color*)
                                                            (filled nil))
@@ -64,54 +65,87 @@
          (draw-paint-bezier-curve-segment pane paint-bezier-curve-segment :ink ink)
          (let ((points (segment paint-bezier-curve-segment)))
            (when first
-             (present (make-instance 'bezier-curve-handle-point
+             (present (make-instance 'bezier-curve-point-on-curve
                                      :paint-object bezier-curve
                                      :point (elt points 0)
                                      :index i
                                      :ink ink
                                      :radius 5
                                      :filled filled)
-                      'bezier-curve-handle-point
+                      'bezier-curve-point-on-curve
                       :record-type 'selection-handle-point-presentation
                       :single-box t)
              (setf first nil))
            (draw-line pane (elt points 0) (elt points 1)
                       :ink *foreground-color* :line-dashes t)
-           (present (make-instance 'bezier-curve-handle-point
+           (present (make-instance 'bezier-curve-point
                                      :paint-object bezier-curve
                                      :point (elt points 1)
                                      :index (+ i 1)
                                      :ink ink
                                      :radius 5
                                      :filled filled)
-                      'bezier-curve-handle-point
+                      'bezier-curve-point
                       :record-type 'selection-handle-point-presentation
                       :single-box t)
            #+nil
            (draw-line pane (elt points 1) (elt points 2)
                       :ink *foreground-color* :line-dashes t)
-           (present (make-instance 'bezier-curve-handle-point
+           (present (make-instance 'bezier-curve-point
                                      :paint-object bezier-curve
                                      :point (elt points 2)
                                      :index (+ i 2)
                                      :ink ink
                                      :radius 5
                                      :filled filled)
-                      'bezier-curve-handle-point
+                      'bezier-curve-point
                       :record-type 'selection-handle-point-presentation
                       :single-box t)
            (draw-line pane (elt points 2) (elt points 3)
                       :ink *foreground-color* :line-dashes t)
-           (present (make-instance 'bezier-curve-handle-point
+           (present (make-instance 'bezier-curve-point-on-curve
                                    :paint-object bezier-curve
                                    :point (elt points 3)
                                    :index (+ i 3)
                                    :ink ink
                                    :radius 5
                                    :filled filled)
-                    'bezier-curve-handle-point
+                    'bezier-curve-point-on-curve
                     :record-type 'selection-handle-point-presentation
                     :single-box t)))))
+
+;;; com-delete-bezier-curve-point-on-curve
+(define-clim-paint-command (com-delete-bezier-curve-point-on-curve)
+    ((presentation t))
+  (let ((bezier-curve-point (presentation-object presentation)))
+    (let ((bezier-curve (presentation-object (output-record-parent presentation)))
+          (index (control-points-index bezier-curve-point)))
+      (with-accessors
+            ((control-points %control-points))
+          bezier-curve
+        (if (> index 0)
+            (if (= index (1- (control-point-count bezier-curve)))
+                (flexichain:delete-elements* control-points
+                                             (- index 2)
+                                             3)
+                (flexichain:delete-elements* control-points
+                                             (1- index)
+                                             3))
+            (flexichain:delete-elements* control-points
+                                         0
+                                         3))))))
+
+(define-gesture-name delete-bezier-curve-point-on-curve-gesture :pointer-button (:middle :shift :control))
+
+(define-presentation-to-command-translator delete-bezier-curve-point-on-curve-translator
+    (bezier-curve-point-on-curve com-delete-bezier-curve-point-on-curve clim-paint
+          :gesture delete-bezier-curve-point-on-curve-gesture
+          :menu nil
+          :tester ((object)
+                   t))
+    (object presentation)
+  (list presentation))
+
 
 (defun draw-paint-bezier-curve-segment (pane bezier-curve-segment &key ink)
   (with-accessors ((segment segment)
@@ -228,25 +262,25 @@
 
 ;;;
 ;;; selection handle dragging / moving
-(defmethod move-dragging ((bezier-curve-handle-point bezier-curve-handle-point) stream dx dy)
+(defmethod move-dragging ((bezier-curve-point bezier-curve-point) stream dx dy)
   (with-accessors ((bezier-curve paint-object)
                    (index control-points-index))
-      bezier-curve-handle-point
+      bezier-curve-point
     (with-output-to-output-record (stream)
       (multiple-value-bind (x0 y0)
           (point-position (control-point bezier-curve index))
         (draw-circle* stream
                       (+ x0 dx)
                       (+ y0 dy)
-                      (radius bezier-curve-handle-point)
-                      :ink (ink bezier-curve-handle-point)
-                      :filled (filledp bezier-curve-handle-point)
+                      (radius bezier-curve-point)
+                      :ink (ink bezier-curve-point)
+                      :filled (filledp bezier-curve-point)
                       :line-thickness 2)))))
 
-(defmethod move-update ((bezier-curve-handle-point bezier-curve-handle-point) dx dy)
+(defmethod move-update ((bezier-curve-point bezier-curve-point) dx dy)
   (with-accessors ((bezier-curve paint-object)
                    (index control-points-index))
-      bezier-curve-handle-point
+      bezier-curve-point
     (multiple-value-bind (x0 y0)
         (point-position (control-point bezier-curve index))
       (setf (control-point bezier-curve index)
@@ -284,15 +318,22 @@
                         bezier-curve
                       (let ((left-control (control-point bezier-curve (+ 1 (* index 3))))
                             (right-control (control-point bezier-curve (+ 2 (* index 3)))))
-                        (flexichain:insert-vector* control-points
-                                                   (+ 2 (* index 3))
-                                                   (vector (midpoint
-                                                            left-control
-                                                            new-point)
-                                                           new-point
-                                                           (midpoint
-                                                            new-point
-                                                            right-control)))))))))))))))
+                        (flexichain:insert-vector*
+                         control-points
+                         (+ 2 (* index 3))
+                         (vector (add-points
+                                  (midpoint
+                                   left-control
+                                   new-point)
+                                  (make-point (/ (- x startx) 2)
+                                              (/ (- y starty) 2)))
+                                 new-point
+                                 (add-points
+                                  (midpoint
+                                   new-point
+                                   right-control)
+                                  (make-point (/ (- x startx) 2)
+                                              (/ (- y starty) 2)))))))))))))))))
 
 ;;; com-split-bezier-curve-segment
 (define-clim-paint-command (com-split-bezier-curve-segment)

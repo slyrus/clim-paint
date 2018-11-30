@@ -90,3 +90,11 @@
         (point-position point-2)
       (make-point (/ (+ x1 x2) 2)
                   (/ (+ y1 y2) 2)))))
+
+(defun add-points (point-1 point-2)
+  (multiple-value-bind (x1 y1)
+      (point-position point-1)
+    (multiple-value-bind (x2 y2)
+        (point-position point-2)
+      (make-point (+ x1 x2)
+                  (+ y1 y2)))))
