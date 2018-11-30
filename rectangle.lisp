@@ -218,3 +218,13 @@
                                     other-x
                                     other-y))))))
 
+(define-clim-paint-command (com-add-rectangle :name t)
+    (&key
+     (ink color))
+  (with-accessors ((shapes shapes)
+                   (default-ink ink))
+      *application-frame*
+    (let ((rectangle (make-paint-rectangle 200 200 300 300
+                                           :ink (or ink default-ink)
+                                           :filled t)))
+      (push rectangle shapes))))
