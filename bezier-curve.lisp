@@ -55,29 +55,71 @@
 
 (defun draw-bezier-curve-selection (pane bezier-curve &key (ink *selection-color*)
                                                            (filled nil))
-  (loop for p1 = nil then p0
-     for i from 0 below (control-point-count bezier-curve)
-     for p0 = (control-point bezier-curve i)
-     do (present (make-instance 'bezier-curve-handle-point
-                                :paint-object bezier-curve
-                                :point p0
-                                :index i
-                                :ink ink
-                                :radius 5
-                                :filled filled)
-                 'bezier-curve-handle-point
-                 :record-type 'selection-handle-point-presentation
-                 :single-box t)
-       (when p1
-         (draw-line pane p0 p1 :ink *foreground-color* :line-dashes t))))
+  (let ((presentation (stream-current-output-record pane)))
+    (loop for segment-presentation across (output-record-children presentation)
+       with first = t
+       for i from 0 by 3
+       for paint-bezier-curve-segment = (presentation-object segment-presentation)
+       do
+         (draw-paint-bezier-curve-segment pane paint-bezier-curve-segment :ink ink)
+         (let ((points (segment paint-bezier-curve-segment)))
+           (when first
+             (present (make-instance 'bezier-curve-handle-point
+                                     :paint-object bezier-curve
+                                     :point (elt points 0)
+                                     :index i
+                                     :ink ink
+                                     :radius 5
+                                     :filled filled)
+                      'bezier-curve-handle-point
+                      :record-type 'selection-handle-point-presentation
+                      :single-box t)
+             (setf first nil))
+           (draw-line pane (elt points 0) (elt points 1)
+                      :ink *foreground-color* :line-dashes t)
+           (present (make-instance 'bezier-curve-handle-point
+                                     :paint-object bezier-curve
+                                     :point (elt points 1)
+                                     :index (+ i 1)
+                                     :ink ink
+                                     :radius 5
+                                     :filled filled)
+                      'bezier-curve-handle-point
+                      :record-type 'selection-handle-point-presentation
+                      :single-box t)
+           #+nil
+           (draw-line pane (elt points 1) (elt points 2)
+                      :ink *foreground-color* :line-dashes t)
+           (present (make-instance 'bezier-curve-handle-point
+                                     :paint-object bezier-curve
+                                     :point (elt points 2)
+                                     :index (+ i 2)
+                                     :ink ink
+                                     :radius 5
+                                     :filled filled)
+                      'bezier-curve-handle-point
+                      :record-type 'selection-handle-point-presentation
+                      :single-box t)
+           (draw-line pane (elt points 2) (elt points 3)
+                      :ink *foreground-color* :line-dashes t)
+           (present (make-instance 'bezier-curve-handle-point
+                                   :paint-object bezier-curve
+                                   :point (elt points 3)
+                                   :index (+ i 3)
+                                   :ink ink
+                                   :radius 5
+                                   :filled filled)
+                    'bezier-curve-handle-point
+                    :record-type 'selection-handle-point-presentation
+                    :single-box t)))))
 
-(defun draw-paint-bezier-curve-segment (pane bezier-curve-segment)
+(defun draw-paint-bezier-curve-segment (pane bezier-curve-segment &key ink)
   (with-accessors ((segment segment)
-                   (ink ink)
+                   (object-ink ink)
                    (line-thickness line-thickness))
       bezier-curve-segment
     (apply #'draw-bezier-design* pane (make-bezier-curve segment)
-           :ink ink
+           :ink (or ink object-ink)
            (append
             (when line-thickness `(:line-thickness ,line-thickness))))))
 
@@ -213,7 +255,6 @@
 
 
 ;;; split a bezier curve
-
 (define-clim-paint-command (com-drag-split-bezier-curve-segment)
     ((bezier-curve-segment paint-bezier-curve-segment) (presentation presentation) (frame frame))
   (with-accessors ((ink ink))
@@ -253,7 +294,7 @@
                                                             new-point
                                                             right-control)))))))))))))))
 
-;;; com-split-line
+;;; com-split-bezier-curve-segment
 (define-clim-paint-command (com-split-bezier-curve-segment)
     ((presentation t))
   (let ((bezier-curve-segment (presentation-object presentation)))
@@ -269,7 +310,6 @@
                    t))
     (object presentation)
   (list presentation))
-
 
 
 ;;; need to pass segment events up to parent!
