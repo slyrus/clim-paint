@@ -135,7 +135,7 @@
                                          0
                                          3))))))
 
-(define-gesture-name delete-bezier-curve-point-on-curve-gesture :pointer-button (:middle :shift :control))
+(define-gesture-name delete-bezier-curve-point-on-curve-gesture :pointer-button (:left :shift :control))
 
 (define-presentation-to-command-translator delete-bezier-curve-point-on-curve-translator
     (bezier-curve-point-on-curve com-delete-bezier-curve-point-on-curve clim-paint
@@ -341,7 +341,7 @@
   (let ((bezier-curve-segment (presentation-object presentation)))
     (com-drag-split-bezier-curve-segment bezier-curve-segment presentation *application-frame*)))
 
-(define-gesture-name split-bezier-curve-segment-gesture :pointer-button (:middle :control))
+(define-gesture-name split-bezier-curve-segment-gesture :pointer-button (:left :control))
 
 (define-presentation-to-command-translator split-bezier-curve-segment-translator
     (paint-bezier-curve-segment com-split-bezier-curve-segment clim-paint
