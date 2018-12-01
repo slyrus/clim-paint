@@ -216,7 +216,7 @@
     (let ((squared-distance (cdr (apply #'rough-closest-point-on-bezier-curve
                                         (make-point x y)
                                         (segment bezier-curve-segment)))))
-      (< squared-distance 100))))
+      (< squared-distance 50))))
 
 (define-presentation-method presentation-refined-position-test
     ((type paint-bezier-curve) (record bezier-curve-presentation) x y)
