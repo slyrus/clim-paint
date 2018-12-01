@@ -17,10 +17,12 @@
 (defun control-point-count (bezier-curve)
   (flexichain:nb-elements (%control-points bezier-curve)))
 
+(defun control-points (bezier-curve)
+  (loop for i below (control-point-count bezier-curve)
+      collect (control-point bezier-curve i)))
+
 (defun %make-bezier-curve (bezier-curve)
-  (make-bezier-curve
-   (loop for i below (control-point-count bezier-curve)
-      collect (control-point bezier-curve i))))
+  (make-bezier-curve (control-points bezier-curve)))
 
 (defgeneric paint-bezier-curve-p (object)
   (:method ((object t)) nil)
