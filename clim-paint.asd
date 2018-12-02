@@ -5,12 +5,13 @@
   :author "Cyrus Harmon <ch-lisp@bobobeach.com>"
   :license  "BSD"
   :version "0.0.1"
-  :depends-on (:mcclim :flexichain)
+  :depends-on (:mcclim :flexichain :parse-number)
   :serial t
   :components ((:file "package")
                (:file "utilities")
                (:file "geometry")
                (:file "presentation")
+               (:file "properties")
                (:file "frame")
                (:file "paint-object")
                (:file "selection")
