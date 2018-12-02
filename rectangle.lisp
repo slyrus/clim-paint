@@ -108,7 +108,7 @@
                        x1 y1 x2 y2
                        :ink ink
                        :filled filled)))
-  (if (gethash rectangle *selected-object-hash*)
+  (if (gethash rectangle (selected-object-hash *application-frame*))
         (draw-rectangle-selection pane rectangle)))
 
 ;;;

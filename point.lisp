@@ -62,7 +62,7 @@
     (with-accessors ((ink ink))
         object
       (draw-circle* pane x y 6 :ink ink :filled t)))
-  (if (gethash object *selected-object-hash*)
+  (if (gethash object (selected-object-hash *application-frame*))
       (draw-point-selection pane object)))
 
 ;;;

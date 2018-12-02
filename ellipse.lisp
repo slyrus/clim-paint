@@ -176,7 +176,7 @@
               (when start-angle `(:start-angle ,start-angle))
               (when end-angle `(:end-angle ,end-angle))
               (when line-thickness `(:line-thickness ,line-thickness)))))
-    (if (gethash ellipse *selected-object-hash*)
+    (if (gethash ellipse (selected-object-hash *application-frame*))
         (draw-ellipse-selection pane ellipse))))
 
 ;;;

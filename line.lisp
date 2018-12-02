@@ -85,7 +85,7 @@
                    (end line-end-point))
       line
     (draw-line pane start end :ink ink)
-    (if (gethash line *selected-object-hash*)
+    (if (gethash line (selected-object-hash *application-frame*))
         (draw-line-selection pane line))))
 
 ;;;

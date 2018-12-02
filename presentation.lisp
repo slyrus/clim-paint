@@ -13,8 +13,6 @@
 
 (defparameter *drag-color* +green+)
 
-(defparameter *selected-object-hash* (make-hash-table))
-
 (defgeneric move-dragging (paint-object stream dx dy))
 
 (defgeneric move-update (paint-object dx dy))

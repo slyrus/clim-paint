@@ -65,21 +65,32 @@
 
 (define-presentation-method select-presentation
     ((type paint-object) (record presentation) stream state)
-  (case state
-    (:select
-     (clrhash *selected-object-hash*)
-     (let ((object (presentation-object record)))
-       (setf (gethash object *selected-object-hash*) t))
-     (queue-repaint
-      stream
-      (make-instance 'window-repaint-event
-                     :sheet stream
-                     :region +everywhere+)))
-    (:deselect
-     (clrhash *selected-object-hash*)
-     (queue-repaint
-      stream
-      (make-instance 'window-repaint-event
-                     :sheet stream
-                     :region +everywhere+)))))
+  (let* ((frame *application-frame*)
+         (properties-pane (find-pane-named frame 'properties)))
+    (case state
+      (:select
+       (clrhash (selected-object-hash frame))
+       (let ((object (presentation-object record)))
+         (setf (pane-object properties-pane) object)
+         (setf (gethash object (selected-object-hash frame)) t))
+       (queue-repaint stream
+                      (make-instance 'window-repaint-event
+                                     :sheet stream
+                                     :region +everywhere+)))
+      (:deselect
+       (clrhash (selected-object-hash frame))
+       (setf (pane-object properties-pane) nil)
+       (queue-repaint
+        stream
+        (make-instance 'window-repaint-event
+                       :sheet stream
+                       :region +everywhere+))))
+    (setf (pane-needs-redisplay properties-pane) t)
+    (clim:redisplay-frame-pane frame properties-pane)
+    #+nil
+    ;; or should we do it like this?
+    (queue-repaint properties-pane
+                   (make-instance 'window-repaint-event
+                                  :sheet properties-pane
+                                  :region +everywhere+))))
 

@@ -199,13 +199,13 @@
                  :record-type 'bezier-curve-segment-presentation)))
 
 (define-presentation-method present (bezier-curve (type paint-bezier-curve) pane
-                                             (view clim-paint-view) &key)
+                                                  (view clim-paint-view) &key)
   (with-accessors ((ink ink)
                    (line-thickness line-thickness)
                    (filled filledp))
       bezier-curve
     (draw-paint-bezier-curve pane bezier-curve :ink ink :line-thickness line-thickness))
-  (if (gethash bezier-curve *selected-object-hash*)
+  (if (gethash bezier-curve (selected-object-hash *application-frame*))
       (draw-bezier-curve-selection pane bezier-curve)))
 
 ;;;

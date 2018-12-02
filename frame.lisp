@@ -9,6 +9,7 @@
 ;;; clim-paint frame
 (define-application-frame clim-paint ()
   ((shapes :initform nil :initarg :shapes :accessor shapes)
+   (selected-object-hash :initform (make-hash-table) :accessor selected-object-hash)
    (ink :initform +blue+ :accessor ink))
   (:menu-bar clim-paint-menubar)
   (:panes
