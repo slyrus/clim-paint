@@ -41,17 +41,20 @@
 
 (defparameter *point-selection-width* 10)
 
+(defclass point-handle-point (selection-handle-point) ())
+
 (defun draw-point-selection (pane point &key (ink *foreground-color*)
                                              (radius 10)
                                              (filled nil))
   (declare (ignore pane))
-  (present (make-instance 'selection-handle-point
+  #+nil
+  (present (make-instance 'point-handle-point
                           :paint-object point
                           :point (%point point)
                           :ink ink
                           :radius radius
                           :filled filled)
-           'selection-handle-point
+           'point-handle-point
            :record-type 'selection-handle-point-presentation
            :single-box t))
 
