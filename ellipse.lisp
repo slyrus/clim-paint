@@ -297,14 +297,7 @@
         (point-position center-point)
       (setf center-point (make-point
                           (+ x1 dx)
-                          (+ y1 dy)))))
-  (map nil
-       (lambda (x)
-         (setf (pane-needs-redisplay (cdr x)) t)
-         (redisplay-frame-pane *application-frame* (cdr x)))
-       (climi::frame-panes-for-layout *application-frame*))
-
-  (redisplay-frame-panes *application-frame* :force-p t))
+                          (+ y1 dy))))))
 
 
 ;;;

@@ -48,7 +48,8 @@
 (define-clim-paint-command (com-move-selection-handle-object)
     ((presentation presentation))
   (let ((object (presentation-object presentation)))
-    (com-drag-move-object object)))
+    (com-drag-move-object object)
+    (redraw-properties-pane)))
 
 (define-gesture-name move-selection-handle-object-gesture :pointer-button (:left))
 
