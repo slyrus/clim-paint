@@ -341,7 +341,11 @@
 (define-clim-paint-command (com-split-bezier-curve-segment)
     ((presentation t))
   (let ((bezier-curve-segment (presentation-object presentation)))
-    (com-drag-split-bezier-curve-segment bezier-curve-segment presentation *application-frame*)))
+    (com-drag-split-bezier-curve-segment bezier-curve-segment presentation *application-frame*))
+  (let* ((frame *application-frame*)
+         (app-pane (find-pane-named frame 'app)))
+    (setf (pane-needs-redisplay app-pane) t)
+    (clim:redisplay-frame-pane *application-frame* app-pane)))
 
 (define-gesture-name split-bezier-curve-segment-gesture :pointer-button (:left :control))
 
