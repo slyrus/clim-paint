@@ -22,7 +22,8 @@
               (pane :finish-on-release t)
             (lambda (stream x y)
               (move-dragging object stream (- x startx) (- y starty))))
-        (move-update object (- x startx) (- y starty))))))
+        (move-update object (- x startx) (- y starty))))
+    (redisplay-frame-panes *application-frame*)))
 
 (define-clim-paint-command (com-move-object)
     ((presentation presentation))

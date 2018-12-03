@@ -388,3 +388,18 @@
                                  :ink (or ink default-ink)
                                  :line-thickness 4)))
       (push bezier-curve shapes))))
+
+;;;
+;;; bezier-curve-update-callback
+(defun bezier-curve-update-callback (button)
+  (declare (ignore button))
+  (let ((properties-pane (find-pane-named *application-frame* 'properties)))
+    (let ((object (pane-object properties-pane)))
+      (let ((x (parse-number:parse-number (gadget-value (find-pane-named *application-frame* 'bezier-curve-x-pos))))
+            (y (parse-number:parse-number (gadget-value (find-pane-named *application-frame* 'bezier-curve-y-pos)))))
+        ;; FIXME!!
+        )))
+  (let* ((frame *application-frame*)
+         (app-pane (find-pane-named frame 'app)))
+    (setf (pane-needs-redisplay app-pane) t)
+    (clim:redisplay-frame-pane *application-frame* app-pane)))

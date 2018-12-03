@@ -175,3 +175,17 @@
     (object)
   (list object))
 
+
+;;;
+;;; point-update-callback
+(defun point-update-callback (button)
+  (declare (ignore button))
+  (let ((properties-pane (find-pane-named *application-frame* 'properties)))
+    (let ((object (pane-object properties-pane)))
+      (let ((x (parse-number:parse-number (gadget-value (find-pane-named *application-frame* 'point-x-pos))))
+            (y (parse-number:parse-number (gadget-value (find-pane-named *application-frame* 'point-y-pos)))))
+        (setf (%point object) (make-point x y)))))
+  (let* ((frame *application-frame*)
+         (app-pane (find-pane-named frame 'app)))
+    (setf (pane-needs-redisplay app-pane) t)
+    (clim:redisplay-frame-pane *application-frame* app-pane)))

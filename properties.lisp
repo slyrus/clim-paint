@@ -3,7 +3,7 @@
 
 ;;
 ;; properties-pane
-(defclass properties-pane (application-pane)
+(defclass properties-pane (vbox-pane)
   ((pane-object :initform nil :accessor pane-object)))
 
 ;;

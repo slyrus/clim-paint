@@ -19,13 +19,13 @@
 (defmethod line-start-point* ((line paint-line))
   (with-slots (p1) line
     (with-slots (x y)
-        p1
+        (%point p1)
       (values x y))))
 
 (defmethod line-end-point* ((line paint-line))
   (with-slots (p2) line
     (with-slots (x y)
-        p2
+        (%point p2)
       (values x y))))
 
 (defmethod line-start-point ((line paint-line))
@@ -233,3 +233,21 @@
             (make-point (+ x2 dx) (+ y2 dy))))))
 
 
+;;;
+;;; line-update-callback
+(defun line-update-callback (button)
+  (declare (ignore button))
+  (let ((properties-pane (find-pane-named *application-frame* 'properties)))
+    (let ((object (pane-object properties-pane)))
+      (let ((x1 (parse-number:parse-number (gadget-value (find-pane-named *application-frame* 'line-x1-pos))))
+            (y1 (parse-number:parse-number (gadget-value (find-pane-named *application-frame* 'line-y1-pos))))
+            (x2 (parse-number:parse-number (gadget-value (find-pane-named *application-frame* 'line-x2-pos))))
+            (y2 (parse-number:parse-number (gadget-value (find-pane-named *application-frame* 'line-y2-pos)))))
+        (let ((paint-point-1 (line-start-point object))
+              (paint-point-2 (line-end-point object)))
+          (setf (%point paint-point-1) (make-point x1 y1)
+                (%point paint-point-2) (make-point x2 y2))))))
+  (let* ((frame *application-frame*)
+         (app-pane (find-pane-named frame 'app)))
+    (setf (pane-needs-redisplay app-pane) t)
+    (clim:redisplay-frame-pane *application-frame* app-pane)))

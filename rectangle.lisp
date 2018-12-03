@@ -228,3 +228,23 @@
                                            :ink (or ink default-ink)
                                            :filled t)))
       (push rectangle shapes))))
+
+;;;
+;;; rectangle-update-callback
+(defun rectangle-update-callback (button)
+  (declare (ignore button))
+  (let ((properties-pane (find-pane-named *application-frame* 'properties)))
+    (let ((object (pane-object properties-pane)))
+      (let ((x1 (parse-number:parse-number (gadget-value (find-pane-named *application-frame* 'rectangle-x1-pos))))
+            (y1 (parse-number:parse-number (gadget-value (find-pane-named *application-frame* 'rectangle-y1-pos))))
+            (x2 (parse-number:parse-number (gadget-value (find-pane-named *application-frame* 'rectangle-x2-pos))))
+            (y2 (parse-number:parse-number (gadget-value (find-pane-named *application-frame* 'rectangle-y2-pos)))))
+        (with-accessors ((point-1 %point-1)
+                         (point-2 %point-2))
+            object
+          (setf point-1 (make-point x1 y1)
+                point-2 (make-point x2 y2))))))
+  (let* ((frame *application-frame*)
+         (app-pane (find-pane-named frame 'app)))
+    (setf (pane-needs-redisplay app-pane) t)
+    (clim:redisplay-frame-pane *application-frame* app-pane)))

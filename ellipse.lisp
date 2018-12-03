@@ -497,6 +497,21 @@
       (push ellipse shapes))))
 
 ;;;
+(defun ellipse-update-callback (button)
+  (declare (ignore button))
+  (let ((properties-pane (find-pane-named *application-frame* 'properties)))
+    (let ((object (pane-object properties-pane)))
+      (let ((x (parse-number:parse-number (gadget-value (find-pane-named *application-frame* 'ellipse-x-pos))))
+            (y (parse-number:parse-number (gadget-value (find-pane-named *application-frame* 'ellipse-y-pos)))))
+        (setf (center-point object)
+              (make-point x y)))))
+  (let* ((frame *application-frame*)
+         (app-pane (find-pane-named frame 'app)))
+    (setf (pane-needs-redisplay app-pane) t)
+    (clim:redisplay-frame-pane *application-frame* app-pane)))
+
+;;;
+#+nil
 (defmethod display-properties ((object ellipse) pane)
   (let (x-pos y-pos)
     (multiple-value-bind (x y)
@@ -508,12 +523,15 @@
               (with-output-as-gadget (pane)
                 (make-pane 'text-field :width 60 :value (princ-to-string x)))))
 
-      (stream-set-cursor-position pane 10 50)
-      (stream-write-string pane "Y pos:  ")
-      (surrounding-output-with-border (pane)
-        (setf y-pos
-              (with-output-as-gadget (pane)
-                (make-pane 'text-field :width 60 :value (princ-to-string y))))))
+      #+nil
+      (progn
+        (stream-set-cursor-position pane 10 50)
+        (stream-write-string pane "Y pos:  ")
+        (surrounding-output-with-border (pane)
+          (setf y-pos
+                (with-output-as-gadget (pane)
+                  (make-pane 'text-field :width 60 :value (princ-to-string y)))))
+        (setf (pane-needs-redisplay y-pos) t)))
     (stream-set-cursor-position pane 50 250)
     (with-output-as-gadget (pane)
       (make-pane 'push-button
@@ -521,7 +539,8 @@
                  :activate-callback (lambda (button)
                                       (declare (ignore button))
                                       (let ((x (parse-number:parse-number (gadget-value x-pos)))
-                                            (y (parse-number:parse-number (gadget-value y-pos))))
+                                            (y 200
+                                             #+nil (parse-number:parse-number (gadget-value y-pos))))
                                         (setf (center-point object)
                                               (make-point x y)))
                                       (let* ((frame *application-frame*)
