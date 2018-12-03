@@ -161,7 +161,8 @@
           (apply #'com-add-point x y
                  (append
                   (when old-point `(:previous-point ,old-point))
-                  (when ink `(:ink ,ink)))))))))
+                  (when ink `(:ink ,ink))))))
+      (setf (pane-needs-redisplay pane) t))))
 
 (define-gesture-name add-point-gesture :pointer-button (:left :control))
 
@@ -189,3 +190,18 @@
          (app-pane (find-pane-named frame 'app)))
     (setf (pane-needs-redisplay app-pane) t)
     (clim:redisplay-frame-pane *application-frame* app-pane)))
+
+(defmethod setup-properties-pane ((object paint-point) frame)
+  (let ((panes (climi::frame-panes-for-layout frame)))
+    (let ((app-pane (find-pane-named frame 'app))
+          (properties-pane (cdr (find 'properties panes :key #'car)))
+          (x-pos (cdr (find 'point-x-pos panes :key #'car)))
+          (y-pos (cdr (find 'point-y-pos panes :key #'car))))
+      (multiple-value-bind (x1 y1)
+          (point-position object)
+        (setf (gadget-value x-pos) (princ-to-string x1)
+              (gadget-value y-pos) (princ-to-string y1)))
+      (setf (pane-object properties-pane) object)
+      (setf (pane-needs-redisplay app-pane) t)
+      (setf (frame-current-layout frame) 'point)
+      (clim:redisplay-frame-pane frame app-pane))))

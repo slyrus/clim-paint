@@ -297,7 +297,14 @@
         (point-position center-point)
       (setf center-point (make-point
                           (+ x1 dx)
-                          (+ y1 dy))))))
+                          (+ y1 dy)))))
+  (map nil
+       (lambda (x)
+         (setf (pane-needs-redisplay (cdr x)) t)
+         (redisplay-frame-pane *application-frame* (cdr x)))
+       (climi::frame-panes-for-layout *application-frame*))
+
+  (redisplay-frame-panes *application-frame* :force-p t))
 
 
 ;;;
@@ -496,15 +503,61 @@
                                     :ink (or ink default-ink))))
       (push ellipse shapes))))
 
+(defmethod setup-properties-pane ((object paint-ellipse) frame)
+  (let ((panes (climi::frame-panes-for-layout frame))
+        (app-pane (find-pane-named frame 'app)))
+    (let ((properties-pane (cdr (find 'properties panes :key #'car)))
+          (center-x (cdr (find 'ellipse-center-x panes :key #'car)))
+          (center-y (cdr (find 'ellipse-center-y panes :key #'car)))
+          (radius-1-dx (cdr (find 'ellipse-radius-1-dx panes :key #'car)))
+          (radius-1-dy (cdr (find 'ellipse-radius-1-dy panes :key #'car)))
+          (radius-2-dx (cdr (find 'ellipse-radius-2-dx panes :key #'car)))
+          (radius-2-dy (cdr (find 'ellipse-radius-2-dy panes :key #'car)))
+          (start-angle (cdr (find 'ellipse-start-angle panes :key #'car)))
+          (end-angle (cdr (find 'ellipse-end-angle panes :key #'car))))
+      (multiple-value-bind (x y)
+          (point-position (center-point object))
+        (setf (gadget-value center-x) (princ-to-string x)
+              (gadget-value center-y) (princ-to-string y)))
+      (setf (gadget-value radius-1-dx) (princ-to-string (radius-1-dx object))
+            (gadget-value radius-1-dy) (princ-to-string (radius-1-dy object))
+            (gadget-value radius-2-dx) (princ-to-string (radius-2-dx object))
+            (gadget-value radius-2-dy) (princ-to-string (radius-2-dy object)))
+      (setf (gadget-value start-angle) (princ-to-string (start-angle object))
+            (gadget-value end-angle) (princ-to-string (end-angle object)))
+      (setf (pane-object properties-pane) object)
+      (setf (pane-needs-redisplay app-pane) t)
+      (setf (frame-current-layout frame) 'ellipse)
+      (clim:redisplay-frame-pane frame app-pane))))
+
 ;;;
 (defun ellipse-update-callback (button)
   (declare (ignore button))
   (let ((properties-pane (find-pane-named *application-frame* 'properties)))
     (let ((object (pane-object properties-pane)))
-      (let ((x (parse-number:parse-number (gadget-value (find-pane-named *application-frame* 'ellipse-x-pos))))
-            (y (parse-number:parse-number (gadget-value (find-pane-named *application-frame* 'ellipse-y-pos)))))
-        (setf (center-point object)
-              (make-point x y)))))
+      (let ((x (parse-number:parse-number
+                (gadget-value (find-pane-named *application-frame* 'ellipse-center-x))))
+            (y (parse-number:parse-number
+                (gadget-value (find-pane-named *application-frame* 'ellipse-center-y))))
+            (radius-1-dx (parse-number:parse-number
+                          (gadget-value (find-pane-named *application-frame* 'ellipse-radius-1-dx))))
+            (radius-1-dy (parse-number:parse-number
+                          (gadget-value (find-pane-named *application-frame* 'ellipse-radius-1-dy))))
+            (radius-2-dx (parse-number:parse-number
+                          (gadget-value (find-pane-named *application-frame* 'ellipse-radius-2-dx))))
+            (radius-2-dy (parse-number:parse-number
+                          (gadget-value (find-pane-named *application-frame* 'ellipse-radius-2-dy))))
+            (start-angle (parse-number:parse-number
+                          (gadget-value (find-pane-named *application-frame* 'ellipse-start-angle))))
+            (end-angle (parse-number:parse-number
+                        (gadget-value (find-pane-named *application-frame* 'ellipse-end-angle)))))
+        (setf (center-point object) (make-point x y)
+              (radius-1-dx object) radius-1-dx
+              (radius-1-dy object) radius-1-dy
+              (radius-2-dx object) radius-2-dx
+              (radius-2-dy object) radius-2-dy
+              (start-angle object) start-angle
+              (end-angle object) end-angle))))
   (let* ((frame *application-frame*)
          (app-pane (find-pane-named frame 'app)))
     (setf (pane-needs-redisplay app-pane) t)

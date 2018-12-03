@@ -22,13 +22,15 @@
               (pane :finish-on-release t)
             (lambda (stream x y)
               (move-dragging object stream (- x startx) (- y starty))))
-        (move-update object (- x startx) (- y starty))))
+        (move-update object (- x startx) (- y starty)))
+      (setf (pane-needs-redisplay pane) t))
     (redisplay-frame-panes *application-frame*)))
 
 (define-clim-paint-command (com-move-object)
     ((presentation presentation))
   (let ((object (presentation-object presentation)))
-    (com-drag-move-object object)))
+    (com-drag-move-object object)
+    (redraw-properties-pane)))
 
 (define-gesture-name move-object-gesture :pointer-button (:left))
 

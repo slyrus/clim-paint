@@ -395,11 +395,24 @@
   (declare (ignore button))
   (let ((properties-pane (find-pane-named *application-frame* 'properties)))
     (let ((object (pane-object properties-pane)))
+      (declare (ignore object))
       (let ((x (parse-number:parse-number (gadget-value (find-pane-named *application-frame* 'bezier-curve-x-pos))))
             (y (parse-number:parse-number (gadget-value (find-pane-named *application-frame* 'bezier-curve-y-pos)))))
+        (declare (ignore x y))
         ;; FIXME!!
         )))
   (let* ((frame *application-frame*)
          (app-pane (find-pane-named frame 'app)))
     (setf (pane-needs-redisplay app-pane) t)
     (clim:redisplay-frame-pane *application-frame* app-pane)))
+
+
+(defmethod setup-properties-pane ((object paint-bezier-curve) frame)
+  (let ((panes (climi::frame-panes-for-layout frame)))
+    (let ((app-pane (find-pane-named frame 'app))
+          (properties-pane (cdr (find 'properties panes :key #'car))))
+      ;; FIXME!!
+      (setf (pane-object properties-pane) object)
+      (setf (pane-needs-redisplay app-pane) t)
+      (setf (frame-current-layout frame) 'bezier-curve)
+      (clim:redisplay-frame-pane frame app-pane)))) 

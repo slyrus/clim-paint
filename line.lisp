@@ -18,15 +18,11 @@
 
 (defmethod line-start-point* ((line paint-line))
   (with-slots (p1) line
-    (with-slots (x y)
-        (%point p1)
-      (values x y))))
+    (point-position p1)))
 
 (defmethod line-end-point* ((line paint-line))
   (with-slots (p2) line
-    (with-slots (x y)
-        (%point p2)
-      (values x y))))
+    (point-position p2)))
 
 (defmethod line-start-point ((line paint-line))
   (with-slots (p1) line
@@ -160,7 +156,8 @@
                                   shapes))
           (let ((new-point (com-add-point x y :ink new-ink)))
             (com-add-line p1 new-point :ink new-ink)
-            (com-add-line p2 new-point :ink new-ink)))))))
+            (com-add-line p2 new-point :ink new-ink))))
+      (setf (pane-needs-redisplay pane) t))))
 
 ;;; 3. com-split-line
 (define-clim-paint-command (com-split-line)
@@ -251,3 +248,25 @@
          (app-pane (find-pane-named frame 'app)))
     (setf (pane-needs-redisplay app-pane) t)
     (clim:redisplay-frame-pane *application-frame* app-pane)))
+
+
+(defmethod setup-properties-pane ((object paint-line) frame)
+  (let ((panes (climi::frame-panes-for-layout frame)))
+    (let ((app-pane (find-pane-named frame 'app))
+          (properties-pane (cdr (find 'properties panes :key #'car)))
+          (x1-pos (cdr (find 'line-x1-pos panes :key #'car)))
+          (y1-pos (cdr (find 'line-y1-pos panes :key #'car)))
+          (x2-pos (cdr (find 'line-x2-pos panes :key #'car)))
+          (y2-pos (cdr (find 'line-y2-pos panes :key #'car))))
+      (multiple-value-bind (x1 y1)
+          (line-start-point* object)
+        (multiple-value-bind (x2 y2)
+            (line-end-point* object)
+          (setf (gadget-value x1-pos) (princ-to-string x1)
+                (gadget-value y1-pos) (princ-to-string y1)
+                (gadget-value x2-pos) (princ-to-string x2)
+                (gadget-value y2-pos) (princ-to-string y2))))
+      (setf (pane-object properties-pane) object)
+      (setf (pane-needs-redisplay app-pane) t)
+      (setf (frame-current-layout frame) 'line)
+      (clim:redisplay-frame-pane frame app-pane))))
