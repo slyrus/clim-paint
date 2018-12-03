@@ -519,9 +519,7 @@
       (setf (gadget-value start-angle) (princ-to-string (start-angle object))
             (gadget-value end-angle) (princ-to-string (end-angle object)))
       (setf (pane-object properties-pane) object)
-      (setf (pane-needs-redisplay app-pane) t)
-      (setf (frame-current-layout frame) 'ellipse)
-      (clim:redisplay-frame-pane frame app-pane))))
+      (setf (frame-current-layout frame) 'ellipse))))
 
 ;;;
 (defun ellipse-update-callback (button)
