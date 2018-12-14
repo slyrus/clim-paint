@@ -41,5 +41,6 @@
 (defun redraw-properties-pane ()
   (let ((frame *application-frame*))
     (let ((properties-pane (find-pane-named frame 'properties)))
-      (let ((object (pane-object properties-pane)))
-        (setup-properties-pane object frame)))))
+      (when properties-pane
+        (let ((object (pane-object properties-pane)))
+          (setup-properties-pane object frame))))))
