@@ -165,7 +165,7 @@
   (let ((line (presentation-object presentation)))
     (com-drag-split-line line presentation *application-frame*)))
 
-(define-gesture-name split-line-gesture :pointer-button (:left :control))
+(define-gesture-name split-line-gesture :pointer-button (:right))
 
 (define-presentation-to-command-translator split-line-translator
     (paint-line com-split-line clim-paint

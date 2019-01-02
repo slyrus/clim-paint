@@ -167,7 +167,7 @@
                   (when ink `(:ink ,ink))))))
       (setf (pane-needs-redisplay pane) t))))
 
-(define-gesture-name add-point-gesture :pointer-button (:left :control))
+(define-gesture-name add-point-gesture :pointer-button (:right))
 
 (define-presentation-to-command-translator point-dragging-add-translator
     (paint-point com-drag-add-point clim-paint

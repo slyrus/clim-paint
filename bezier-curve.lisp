@@ -137,7 +137,7 @@
                                          0
                                          3))))))
 
-(define-gesture-name delete-bezier-curve-point-on-curve-gesture :pointer-button (:left :shift :control))
+(define-gesture-name delete-bezier-curve-point-on-curve-gesture :pointer-button (:right :shift))
 
 (define-presentation-to-command-translator delete-bezier-curve-point-on-curve-translator
     (bezier-curve-point-on-curve com-delete-bezier-curve-point-on-curve clim-paint
@@ -347,7 +347,7 @@
     (setf (pane-needs-redisplay app-pane) t)
     (clim:redisplay-frame-pane *application-frame* app-pane)))
 
-(define-gesture-name split-bezier-curve-segment-gesture :pointer-button (:left :control))
+(define-gesture-name split-bezier-curve-segment-gesture :pointer-button (:right))
 
 (define-presentation-to-command-translator split-bezier-curve-segment-translator
     (paint-bezier-curve-segment com-split-bezier-curve-segment clim-paint
