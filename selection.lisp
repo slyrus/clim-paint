@@ -19,7 +19,7 @@
 
 ;;;
 ;;; selection-handle-point-presentation
-(defclass selection-handle-point-presentation (standard-presentation) ())
+(defclass selection-handle-point-presentation (clim-paint-presentation) ())
 
 (define-presentation-type selection-handle-point-presentation ())
 

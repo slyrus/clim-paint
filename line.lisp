@@ -41,7 +41,7 @@
 
 ;;;
 ;;; line-presentation
-(defclass line-presentation (standard-presentation) ())
+(defclass line-presentation (clim-paint-presentation) ())
 
 (define-presentation-type line-presentation ())
 

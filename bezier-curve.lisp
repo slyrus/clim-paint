@@ -43,11 +43,11 @@
 
 ;;;
 ;;; bezier-curve-presentation
-(defclass bezier-curve-presentation (standard-presentation) ())
+(defclass bezier-curve-presentation (clim-paint-presentation) ())
 
 (define-presentation-type bezier-curve-presentation ())
 
-(defclass bezier-curve-segment-presentation (standard-presentation) ())
+(defclass bezier-curve-segment-presentation (clim-paint-presentation) ())
 
 (define-presentation-type bezier-curve-segment-presentation ())
 

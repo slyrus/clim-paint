@@ -111,3 +111,19 @@ erasing."
 (define-default-presentation-method select-presentation
     (type record stream state)
   (declare (ignore type record stream state)))
+
+(defclass clim-paint-presentation (standard-presentation) ())
+
+(defparameter *clim-paint-presentation-print-float-digits* 2)
+
+(defmethod print-object ((object clim-paint-presentation) stream)
+  (print-unreadable-object (object stream :type t :identity t)
+    (with-bounding-rectangle* (x1 y1 x2 y2)
+        object
+      (format stream
+              (format nil "[~~,~D~:*F:~~,~D~:*F] [~~,~D~:*F:~~,~D~:*F] ~~S"
+                      *clim-paint-presentation-print-float-digits*)
+              x1 x2 y1 y2 (presentation-type object))
+      (when climi::*print-presentation-verbose*
+        (format stream " ~S" (presentation-object object))))))
+

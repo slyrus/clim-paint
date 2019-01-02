@@ -34,7 +34,7 @@
 
 ;;;
 ;;; rectangle-presentation
-(defclass rectangle-presentation (standard-presentation) ())
+(defclass rectangle-presentation (clim-paint-presentation) ())
 
 (define-presentation-type rectangle-presentation ())
 

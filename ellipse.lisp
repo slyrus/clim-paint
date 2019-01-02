@@ -52,7 +52,7 @@
 
 ;;;
 ;;; ellipse-presentation
-(defclass ellipse-presentation (standard-presentation) ())
+(defclass ellipse-presentation (clim-paint-presentation) ())
 
 (define-presentation-type ellipse-presentation ())
 

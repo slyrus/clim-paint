@@ -35,7 +35,7 @@
 
 ;;;
 ;;; point-presentation
-(defclass point-presentation (standard-presentation) ())
+(defclass point-presentation (clim-paint-presentation) ())
 
 (define-presentation-type point-presentation ())
 
