@@ -26,17 +26,43 @@
       (setf (pane-needs-redisplay pane) t))
     (redisplay-frame-panes *application-frame*)))
 
+;;;
+;;; move
 (define-clim-paint-command (com-move-object)
     ((presentation presentation))
   (let ((object (presentation-object presentation)))
     (com-drag-move-object object)
-    (redraw-properties-pane)))
+    (redisplay-frame-panes *application-frame*)))
 
-(define-gesture-name move-object-gesture :pointer-button (:left))
+(define-gesture-name move-object-gesture :pointer-button (:left :control))
 
 (define-presentation-to-command-translator move-object-translator
     (paint-object com-move-object clim-paint
            :gesture move-object-gesture
+           :menu nil
+           :tester ((object presentation event)
+                    (declare (ignore presentation event))
+                    (paint-object-p object)))
+    (object presentation)
+  (list presentation))
+
+;;;
+;;; move and select
+(define-clim-paint-command (com-move-and-select-object)
+    ((presentation presentation))
+  (let ((object (presentation-object presentation)))
+    (com-drag-move-object object)
+    (let ((pane (get-frame-pane *application-frame* 'app)))
+      (funcall-presentation-generic-function select-presentation
+                                             (type-of (presentation-object presentation))
+                                             presentation pane :select))
+    (redisplay-frame-panes *application-frame*)))
+
+(define-gesture-name move-and-select-object-gesture :pointer-button (:left))
+
+(define-presentation-to-command-translator move-and-select-object-translator
+    (paint-object com-move-and-select-object clim-paint
+           :gesture move-and-select-object-gesture
            :menu nil
            :tester ((object presentation event)
                     (declare (ignore presentation event))
