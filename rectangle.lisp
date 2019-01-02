@@ -109,7 +109,7 @@
                        :ink ink
                        :filled filled)))
   (if (gethash rectangle (selected-object-hash *application-frame*))
-        (draw-rectangle-selection pane rectangle)))
+      (draw-rectangle-selection pane rectangle)))
 
 ;;;
 ;;; highlighting
