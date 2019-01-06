@@ -2,7 +2,8 @@
 (in-package :clim-paint)
 
 (defclass paint-bezier-curve-segment (paint-object)
-  ((segment :initarg :segment :accessor segment)
+  ((parent :initarg :parent :accessor parent)
+   (segment :initarg :segment :accessor segment)
    (index :initarg :index :accessor segment-index)
    (line-thickness :initarg :line-thickness :accessor line-thickness :initform 1)))
 
@@ -191,6 +192,7 @@
   (loop for seg across (make-bezier-curve-segments bezier-curve)
      for i from 0
      do (present (make-instance 'paint-bezier-curve-segment
+                                :parent bezier-curve
                                 :segment seg
                                 :index i
                                 :ink ink
@@ -261,6 +263,28 @@
                    (point-position (control-point bezier-curve i))
                  (make-point (+ x dx) (+ y dy)))))
     #+nil (update-bezier-curve bezier-curve)))
+
+;;;
+;;; segment dragging / moving
+(defmethod move-dragging ((bezier-curve-segment paint-bezier-curve-segment) stream dx dy)
+  (with-output-to-output-record (stream)
+    (with-translation (stream dx dy)
+      (let ((bezier-curve (parent bezier-curve-segment)))
+        (draw-paint-bezier-curve stream bezier-curve)))))
+
+(defmethod move-update ((bezier-curve-segment paint-bezier-curve-segment) dx dy)
+  (let ((bezier-curve (parent bezier-curve-segment)))
+    (with-accessors ((ink ink)
+                     (line-thickness line-thickness)
+                     (filled filledp))
+        bezier-curve
+      (loop for i from 0 below (control-point-count bezier-curve)
+         do
+           (setf (control-point bezier-curve i)
+                 (multiple-value-bind (x y)
+                     (point-position (control-point bezier-curve i))
+                   (make-point (+ x dx) (+ y dy)))))
+      #+nil (update-bezier-curve bezier-curve))))
 
 ;;;
 ;;; selection handle dragging / moving
