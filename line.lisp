@@ -39,12 +39,6 @@
                    (eq point (line-end-point shape))))
      collect shape))
 
-;;;
-;;; line-presentation
-(defclass line-presentation (clim-paint-presentation) ())
-
-(define-presentation-type line-presentation ())
-
 (defparameter *line-selection-width* 8)
 
 (defun draw-line-selection (pane line)
@@ -87,7 +81,7 @@
 ;;;
 ;;; refined-position test
 (define-presentation-method presentation-refined-position-test
-    ((type paint-line) (record line-presentation) x y)
+    ((type paint-line) record x y)
   (let ((line (presentation-object record)))
     (line-point-between-p (make-point x y)
                           (line-start-point line)
@@ -96,7 +90,7 @@
 ;;;
 ;;; highlighting
 (define-presentation-method highlight-presentation
-    ((type paint-line) (record line-presentation) stream state)
+    ((type paint-line) record stream state)
   (let ((line (presentation-object record)))
     (with-accessors ((start line-start-point)
                      (end line-end-point))

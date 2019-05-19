@@ -1,37 +1,7 @@
 
 (in-package :clim-paint)
 
-;;;
-;;; HACK ALERT!
-;;;
-;;; This present* method feels like a hack. It would be great if there
-;;; were a way (that I knew of) for embedding these kinds of options in
-;;; the default present presentation-method stuff. As it is, I can
-;;; dispatch on the class of the object I'm presenting, but I don't
-;;; want to have a big switch statement inside my main display
-;;; function, so use this hack until I figure out a better mechanism.
 
-(defgeneric present* (object)
-  (:method ((object paint-point))
-    (present object
-             'paint-point
-             :record-type 'point-presentation :single-box t))
-  (:method ((object paint-line))
-    (present object
-             'paint-line
-             :record-type 'line-presentation :single-box nil))
-  (:method ((object paint-rectangle))
-    (present object
-             'paint-rectangle
-             :record-type 'rectangle-presentation :single-box nil))
-  (:method ((object paint-ellipse))
-    (present object
-             'paint-ellipse
-             :record-type 'ellipse-presentation :single-box nil))
-  (:method ((object paint-bezier-curve))
-    (present object
-             'paint-bezier-curve
-             :record-type 'bezier-curve-presentation :single-box nil)))
 
 ;;;
 ;;; main display function
@@ -39,7 +9,9 @@
   (declare (ignore pane))
   (with-accessors ((shapes shapes))
       frame
-    (mapcar #'present* shapes)))
+    (mapcar (lambda (x)
+              (present x (class-of x) :single-box t))
+            shapes)))
 
 ;;;
 ;;; menus, menu bars, and application commands
@@ -67,7 +39,9 @@
         (let ((*standard-output* stream))
           (with-accessors ((shapes shapes))
               frame
-            (mapcar #'present* shapes)))))))
+            (mapcar (lambda (x)
+                      (present x (class-of x) :single-box t))
+                    shapes)))))))
 
 (make-command-table 'clim-paint-file-command-table
                     :errorp nil
@@ -89,25 +63,30 @@
   (list (make-paint-point 10 20 :ink +red+)
         (make-paint-point 30 20 :ink +green+)
         (make-paint-point 50 20 :ink +blue+)
+
         (make-paint-rectangle 50 160 100 200 :ink +blue+ :filled t)
         (make-paint-rectangle 350 210 400 250 :ink +dark-grey+ :filled t)
-        (make-paint-ellipse (make-point 100 100)
-                            10 30 40 15
-                            :ink +orange+
-                            :filled t)
-        (make-paint-ellipse (make-point 250 100)
-                            30 0 0 40
-                            :ink +brown+
-                            :filled t)
-        (make-paint-ellipse (make-point 225 200)
-                            150 -90 60 25
-                            :ink +green+
-                            :line-thickness 5
-                            :filled nil)
+
         (make-paint-bezier-curve (coord-seq-to-point-seq
                                   (list 20 150 20 80 90 110 90 170 90 220 140 210 140 140))
                                  :ink +light-blue+
-                                 :line-thickness 4)))
+                                 :line-thickness 4)
+        #+nil
+        (progn
+          (make-paint-ellipse (make-point 100 100)
+                              10 30 40 15
+                              :ink +orange+
+                              :filled t)          
+          (make-paint-ellipse (make-point 250 100)
+                              30 0 0 40
+                              :ink +brown+
+                              :filled t)
+          (make-paint-ellipse (make-point 225 200)
+                              150 -90 60 25
+                              :ink +green+
+                              :line-thickness 5
+                              :filled nil)
+)))
 
 (defun clim-paint (&key (new-process t))
   (flet ((run ()

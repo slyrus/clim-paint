@@ -32,12 +32,6 @@
         (point-position (%point-2 object))
       (values x1 y1 x2 y2))))
 
-;;;
-;;; rectangle-presentation
-(defclass rectangle-presentation (clim-paint-presentation) ())
-
-(define-presentation-type rectangle-presentation ())
-
 ;;
 ;; subclass selection-handle-point which has a point, which is the
 ;; point of the selection-handle itself, but only a single reference
@@ -84,7 +78,6 @@
                                 :radius radius
                                 :filled filled)
                  'rectangle-handle-point
-                 :record-type 'selection-handle-point-presentation
                  :single-box t)
         (present (make-instance 'rectangle-handle-point
                                 :paint-object rectangle
@@ -94,7 +87,6 @@
                                 :radius radius
                                 :filled filled)
                  'rectangle-handle-point
-                 :record-type 'selection-handle-point-presentation
                  :single-box t)))))
 
 (define-presentation-method present (rectangle (type paint-rectangle) pane
@@ -116,7 +108,7 @@
 (defparameter *rectangle-highlight-margin* 2)
 
 (define-presentation-method highlight-presentation
-    ((type paint-rectangle) (record rectangle-presentation) stream state)
+    ((type paint-rectangle) record stream state)
   (let ((rectangle (presentation-object record)))
     (case state
       (:highlight

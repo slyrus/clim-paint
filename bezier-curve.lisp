@@ -76,7 +76,6 @@
                                      :radius 5
                                      :filled filled)
                       'bezier-curve-point-on-curve
-                      :record-type 'selection-handle-point-presentation
                       :single-box t)
              (setf first nil))
            (draw-line pane (elt points 0) (elt points 1)
@@ -89,7 +88,6 @@
                                      :radius 5
                                      :filled filled)
                       'bezier-curve-point
-                      :record-type 'selection-handle-point-presentation
                       :single-box t)
            #+nil
            (draw-line pane (elt points 1) (elt points 2)
@@ -102,7 +100,6 @@
                                      :radius 5
                                      :filled filled)
                       'bezier-curve-point
-                      :record-type 'selection-handle-point-presentation
                       :single-box t)
            (draw-line pane (elt points 2) (elt points 3)
                       :ink *foreground-color* :line-dashes t)
@@ -114,7 +111,6 @@
                                    :radius 5
                                    :filled filled)
                     'bezier-curve-point-on-curve
-                    :record-type 'selection-handle-point-presentation
                     :single-box t)))))
 
 ;;; com-delete-bezier-curve-point-on-curve
@@ -227,7 +223,7 @@
 ;;;
 ;;; highlighting
 (define-presentation-method highlight-presentation
-    ((type paint-bezier-curve-segment) (record bezier-curve-segment-presentation) stream state)
+    ((type paint-bezier-curve-segment) record stream state)
   (let ((parent (output-record-parent record)))
     (funcall-presentation-generic-function highlight-presentation
                                            (type-of (presentation-object parent))
@@ -236,7 +232,7 @@
                                            state)))
 
 (define-presentation-method highlight-presentation
-    ((type paint-bezier-curve) (record bezier-curve-presentation) stream state)
+    ((type paint-bezier-curve) record stream state)
   (let ((bezier-curve (presentation-object record)))
     (case state
       (:highlight

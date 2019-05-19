@@ -17,12 +17,6 @@
   ((point :type point :initarg :point :accessor %point)
    (radius :initarg :radius :accessor radius)))
 
-;;;
-;;; selection-handle-point-presentation
-(defclass selection-handle-point-presentation (clim-paint-presentation) ())
-
-(define-presentation-type selection-handle-point-presentation ())
-
 (define-presentation-method present (selection-handle-object
                                      (type selection-handle-point) pane
                                      (view clim-paint-view)

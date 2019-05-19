@@ -32,8 +32,6 @@ editing shapes via the CLIM interactor.
 
 #### line-presenation
 
-### present* generic function
-
 ## Highlighting
 
 ## Dragging

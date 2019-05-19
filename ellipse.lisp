@@ -50,12 +50,6 @@
                   (when filled-supplied-p `(:filled ,filled))
                   (when line-thickness-supplied-p `(:line-thickness ,line-thickness)))))
 
-;;;
-;;; ellipse-presentation
-(defclass ellipse-presentation (clim-paint-presentation) ())
-
-(define-presentation-type ellipse-presentation ())
-
 (defclass ellipse-radius-handle-point (selection-handle-point)
   ((radius-index :initarg :radius-index :accessor radius-index
                  :documentation "Either 1 or 2 indicating whether this
@@ -108,7 +102,6 @@
                                 :radius radius
                                 :filled filled)
                  'ellipse-center-handle-point
-                 :record-type 'selection-handle-point-presentation
                  :single-box t)
         (draw-line* pane
                     x1 y1
@@ -128,7 +121,6 @@
                                 :radius radius
                                 :filled filled)
                  'ellipse-radius-handle-point
-                 :record-type 'selection-handle-point-presentation
                  :single-box t)
         (draw-line* pane
                     x1 y1
@@ -148,7 +140,6 @@
                                 :radius radius
                                 :filled filled)
                  'ellipse-radius-handle-point
-                 :record-type 'selection-handle-point-presentation
                  :single-box t)))))
 
 (define-presentation-method present (ellipse (type paint-ellipse) pane
@@ -186,7 +177,7 @@
 ;;; if not, only hit the ellipse if we're on the perimeter, but for
 ;;; the moment we don't do that.
 (define-presentation-method presentation-refined-position-test
-    ((type paint-ellipse) (record ellipse-presentation) x y)
+    ((type paint-ellipse) record x y)
   (let ((ellipse (presentation-object record)))
     (with-accessors ((center-point center-point)
                      (radius-1-dx radius-1-dx)
@@ -209,7 +200,7 @@
 ;;;
 ;;; highlighting
 (define-presentation-method highlight-presentation
-    ((type paint-ellipse) (record ellipse-presentation) stream state)
+    ((type paint-ellipse) record stream state)
   (let ((paint-ellipse (presentation-object record)))
     (case state
       (:highlight

@@ -33,12 +33,6 @@
         (and (= x1 x2)
              (= y1 y2))))))
 
-;;;
-;;; point-presentation
-(defclass point-presentation (clim-paint-presentation) ())
-
-(define-presentation-type point-presentation ())
-
 (defparameter *point-selection-width* 10)
 
 (defclass point-handle-point (selection-handle-point) ())
@@ -55,7 +49,6 @@
                           :radius radius
                           :filled filled)
            'point-handle-point
-           :record-type 'selection-handle-point-presentation
            :single-box t))
 
 (define-presentation-method present (object (type paint-point) pane
@@ -71,7 +64,7 @@
 ;;;
 ;;; highlighting
 (define-presentation-method highlight-presentation
-    ((type paint-point) (record point-presentation) stream state)
+    ((type paint-point) record stream state)
   (let ((paint-point (presentation-object record)))
     (multiple-value-bind (x y)
         (point-position paint-point)
