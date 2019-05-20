@@ -223,9 +223,6 @@
       (setf (%point paint-point-2)
             (make-point (+ x2 dx) (+ y2 dy))))))
 
-
-;;;
-;;; line-update-callback
 (defun line-update-callback (button)
   (declare (ignore button))
   (let ((properties-pane (find-pane-named *application-frame* 'properties)))

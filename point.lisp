@@ -172,9 +172,6 @@
     (object)
   (list object))
 
-
-;;;
-;;; point-update-callback
 (defun point-update-callback (button)
   (declare (ignore button))
   (let ((properties-pane (find-pane-named *application-frame* 'properties)))

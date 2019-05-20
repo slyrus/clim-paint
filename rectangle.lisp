@@ -221,8 +221,6 @@
                                            :filled t)))
       (push rectangle shapes))))
 
-;;;
-;;; rectangle-update-callback
 (defun rectangle-update-callback (button)
   (declare (ignore button))
   (let ((properties-pane (find-pane-named *application-frame* 'properties)))
