@@ -249,11 +249,18 @@
                       paint-ellipse
                     (multiple-value-bind (x1 y1)
                         (point-position center-point)
-                      (make-ellipse* x1 y1
-                                     (+ radius-1-dx *ellipse-highlight-margin* 1)
-                                     (+ radius-1-dy *ellipse-highlight-margin* 1)
-                                     (+ radius-2-dx *ellipse-highlight-margin* 1)
-                                     (+ radius-2-dy *ellipse-highlight-margin* 1)))))))))))
+                      ;; We shouldn't need the bounding rectangle
+                      ;; below, but commit "75683768 repaint-sheet:
+                      ;; don't call bounding-rectangle on passed
+                      ;; region" broke our unhighlighting code. The is
+                      ;; discussed in McCLIM Issue 766. Leave in for
+                      ;; now to avoid the problem.
+                      (bounding-rectangle
+                       (make-ellipse* x1 y1
+                                      (+ radius-1-dx *ellipse-highlight-margin* 1)
+                                      (+ radius-1-dy *ellipse-highlight-margin* 1)
+                                      (+ radius-2-dx *ellipse-highlight-margin* 1)
+                                      (+ radius-2-dy *ellipse-highlight-margin* 1))))))))))))
 
 ;;;
 ;;; dragging / moving
@@ -526,7 +533,6 @@
     (clim:redisplay-frame-pane *application-frame* app-pane)))
 
 (defmethod make-properties-pane ((ellipse paint-ellipse))
-
   (with-accessors ((center-point center-point)
                    (radius-1-dx radius-1-dx)
                    (radius-1-dy radius-1-dy)

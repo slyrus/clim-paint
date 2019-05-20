@@ -71,22 +71,21 @@
                                   (list 20 150 20 80 90 110 90 170 90 220 140 210 140 140))
                                  :ink +light-blue+
                                  :line-thickness 4)
-        #+nil
-        (progn
-          (make-paint-ellipse (make-point 100 100)
-                              10 30 40 15
-                              :ink +orange+
-                              :filled t)          
-          (make-paint-ellipse (make-point 250 100)
-                              30 0 0 40
-                              :ink +brown+
-                              :filled t)
-          (make-paint-ellipse (make-point 225 200)
-                              150 -90 60 25
-                              :ink +green+
-                              :line-thickness 5
-                              :filled nil)
-)))
+
+        (make-paint-ellipse (make-point 100 100)
+                            10 30 40 15
+                            :ink +orange+
+                            :filled t)
+        (make-paint-ellipse (make-point 250 100)
+                            30 0 0 40
+                            :ink +brown+
+                            :filled t)
+        (make-paint-ellipse (make-point 225 200)
+                            150 -90 60 25
+                            :ink +green+
+                            :line-thickness 5
+                            :filled nil)
+        ))
 
 (defun clim-paint (&key (new-process t))
   (flet ((run ()
