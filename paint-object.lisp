@@ -89,3 +89,15 @@
                               (selection-handle-object-p object)))
     (object presentation)
   (list presentation))
+
+(defmethod setup-properties-pane ((object paint-object) frame)
+  (let ((app-pane (find-pane-named frame 'app))
+        (old-properties-pane
+         (find-pane 'properties (frame-top-level-sheet frame))))
+    (let ((properties-pane (make-properties-pane object)))
+      (setf (pane-object properties-pane) object)
+      (setf (pane-needs-redisplay app-pane) t)
+      (let ((parent (sheet-parent old-properties-pane)))
+        (sheet-disown-child parent old-properties-pane :errorp t)
+        (sheet-adopt-child parent properties-pane))
+      (clim:redisplay-frame-pane frame app-pane))))

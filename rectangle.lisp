@@ -227,10 +227,14 @@
   (declare (ignore button))
   (let ((properties-pane (find-pane-named *application-frame* 'properties)))
     (let ((object (pane-object properties-pane)))
-      (let ((x1 (parse-number:parse-number (gadget-value (find-pane-named *application-frame* 'rectangle-x1-pos))))
-            (y1 (parse-number:parse-number (gadget-value (find-pane-named *application-frame* 'rectangle-y1-pos))))
-            (x2 (parse-number:parse-number (gadget-value (find-pane-named *application-frame* 'rectangle-x2-pos))))
-            (y2 (parse-number:parse-number (gadget-value (find-pane-named *application-frame* 'rectangle-y2-pos)))))
+      (let ((x1 (parse-number:parse-number
+                 (gadget-value (find-pane-named *application-frame* 'x1-pos))))
+            (y1 (parse-number:parse-number
+                 (gadget-value (find-pane-named *application-frame* 'y1-pos))))
+            (x2 (parse-number:parse-number
+                 (gadget-value (find-pane-named *application-frame* 'x2-pos))))
+            (y2 (parse-number:parse-number
+                 (gadget-value (find-pane-named *application-frame* 'y2-pos)))))
         (with-accessors ((point-1 %point-1)
                          (point-2 %point-2))
             object
@@ -241,23 +245,31 @@
     (setf (pane-needs-redisplay app-pane) t)
     (clim:redisplay-frame-pane *application-frame* app-pane)))
 
-(defmethod setup-properties-pane ((object paint-rectangle) frame)
-  (let ((panes (climi::frame-panes-for-layout frame)))
-    (let ((app-pane (find-pane-named frame 'app))
-          (properties-pane (cdr (find 'properties panes :key #'car)))
-          (x1-pos (cdr (find 'rectangle-x1-pos panes :key #'car)))
-          (y1-pos (cdr (find 'rectangle-y1-pos panes :key #'car)))
-          (x2-pos (cdr (find 'rectangle-x2-pos panes :key #'car)))
-          (y2-pos (cdr (find 'rectangle-y2-pos panes :key #'car))))
-      (multiple-value-bind (x1 y1)
-          (point-position (%point-1 object))
-        (multiple-value-bind (x2 y2)
-            (point-position (%point-2 object))
-          (setf (gadget-value x1-pos) (princ-to-string x1)
-                (gadget-value y1-pos) (princ-to-string y1)
-                (gadget-value x2-pos) (princ-to-string x2)
-                (gadget-value y2-pos) (princ-to-string y2))))
-      (setf (pane-object properties-pane) object)
-      (setf (pane-needs-redisplay app-pane) t)
-      (setf (frame-current-layout frame) 'rectangle)
-      (clim:redisplay-frame-pane frame app-pane))))
+(defmethod make-properties-pane ((rectangle paint-rectangle))
+  (multiple-value-bind (x1 y1)
+      (point-position (%point-1 rectangle))
+    (multiple-value-bind (x2 y2)
+        (point-position (%point-2 rectangle))
+      (make-pane
+       'properties-pane
+       :name 'properties
+       :contents
+       (list
+        (labelling (:label "Rectangle Properties")
+          (vertically ()
+            (horizontally ()
+              (labelling (:label "X1 Position")
+                (make-pane 'text-field :name 'x1-pos :editable-p t :value (princ-to-string x1)))
+              (labelling (:label "Y1 Position")
+                (make-pane 'text-field :name 'y1-pos :editable-p t :value (princ-to-string y1))))
+            (horizontally ()
+              (labelling (:label "X2 Position")
+                (make-pane 'text-field :name 'x2-pos :editable-p t :value (princ-to-string x2)))
+              (labelling (:label "Y2 Position")
+                (make-pane 'text-field :name 'y2-pos :editable-p t :value (princ-to-string y2))))
+            (make-pane 'push-button
+                       :name 'rectangle-update
+                       :label "Update"
+                       :activate-callback 'rectangle-update-callback
+                       :max-height 20))))))))
+

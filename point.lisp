@@ -179,25 +179,40 @@
   (declare (ignore button))
   (let ((properties-pane (find-pane-named *application-frame* 'properties)))
     (let ((object (pane-object properties-pane)))
-      (let ((x (parse-number:parse-number (gadget-value (find-pane-named *application-frame* 'point-x-pos))))
-            (y (parse-number:parse-number (gadget-value (find-pane-named *application-frame* 'point-y-pos)))))
+      (let ((x (parse-number:parse-number
+                (gadget-value (find-pane-named *application-frame* 'x-pos))))
+            (y (parse-number:parse-number
+                (gadget-value (find-pane-named *application-frame* 'y-pos)))))
         (setf (%point object) (make-point x y)))))
   (let* ((frame *application-frame*)
          (app-pane (find-pane-named frame 'app)))
     (setf (pane-needs-redisplay app-pane) t)
     (clim:redisplay-frame-pane *application-frame* app-pane)))
 
-(defmethod setup-properties-pane ((object paint-point) frame)
-  (let ((panes (climi::frame-panes-for-layout frame)))
-    (let ((app-pane (find-pane-named frame 'app))
-          (properties-pane (cdr (find 'properties panes :key #'car)))
-          (x-pos (cdr (find 'point-x-pos panes :key #'car)))
-          (y-pos (cdr (find 'point-y-pos panes :key #'car))))
-      (multiple-value-bind (x1 y1)
-          (point-position object)
-        (setf (gadget-value x-pos) (princ-to-string x1)
-              (gadget-value y-pos) (princ-to-string y1)))
-      (setf (pane-object properties-pane) object)
-      (setf (pane-needs-redisplay app-pane) t)
-      (setf (frame-current-layout frame) 'point)
-      (clim:redisplay-frame-pane frame app-pane))))
+(defmethod make-properties-pane ((point paint-point))
+  (multiple-value-bind (x y)
+      (point-position point)
+    (make-pane
+     'properties-pane
+     :name 'properties
+     :object point
+     :contents
+     (list
+      (labelling (:label "New Point Properties")
+        (vertically ()
+          (horizontally ()
+            (labelling (:label "X Position")
+              (make-pane 'text-field
+                         :name 'x-pos
+                         :editable-p t
+                         :value (princ-to-string x)))
+            (labelling (:label "Y Position")
+              (make-pane 'text-field
+                         :name 'y-pos
+                         :editable-p t
+                         :value (princ-to-string y))))
+          (make-pane 'push-button
+                     :name 'point-update
+                     :label "Update"
+                     :activate-callback 'point-update-callback
+                     :max-height 20)))))))

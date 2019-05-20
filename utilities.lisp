@@ -22,3 +22,11 @@ of list. Returns the (destructively) modified list."
         (append list (list new-item))))
   list)
 
+(defun find-pane (name pane)
+  (labels ((find-pane-aux (pane)
+             (cond ((equal (pane-name pane) name)
+                    (return-from find-pane pane))
+                   (pane
+                    (mapc #'find-pane-aux (sheet-children pane))))))
+    (find-pane-aux pane)))
+

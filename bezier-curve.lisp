@@ -42,16 +42,6 @@
           (when filled-supplied-p `(:filled ,filled))
           (when line-thickness-supplied-p `(:line-thickness ,line-thickness)))))
 
-;;;
-;;; bezier-curve-presentation
-(defclass bezier-curve-presentation (clim-paint-presentation) ())
-
-(define-presentation-type bezier-curve-presentation ())
-
-(defclass bezier-curve-segment-presentation (clim-paint-presentation) ())
-
-(define-presentation-type bezier-curve-segment-presentation ())
-
 (defclass bezier-curve-point (selection-handle-point)
   ((index :initarg :index :accessor control-points-index)))
 
@@ -193,8 +183,7 @@
                                 :index i
                                 :ink ink
                                 :line-thickness line-thickness)
-                 'paint-bezier-curve-segment
-                 :record-type 'bezier-curve-segment-presentation)))
+                 'paint-bezier-curve-segment)))
 
 (define-presentation-method present (bezier-curve (type paint-bezier-curve) pane
                                                   (view clim-paint-view) &key)
@@ -209,7 +198,7 @@
 ;;;
 ;;; refined-position test
 (define-presentation-method presentation-refined-position-test
-    ((type paint-bezier-curve-segment) (record bezier-curve-segment-presentation) x y)
+    ((type paint-bezier-curve-segment) record x y)
   (let ((bezier-curve-segment (presentation-object record)))
     (let ((squared-distance (cdr (apply #'rough-closest-point-on-bezier-curve
                                         (make-point x y)
@@ -217,7 +206,7 @@
       (< squared-distance 50))))
 
 (define-presentation-method presentation-refined-position-test
-    ((type paint-bezier-curve) (record bezier-curve-presentation) x y)
+    ((type paint-bezier-curve) record x y)
   nil)
 
 ;;;
@@ -415,13 +404,15 @@
 
 ;;;
 ;;; bezier-curve-update-callback
-(defun bezier-curve-update-callback (button)
+(defun bezier-point-update-callback (button)
   (declare (ignore button))
   (let ((properties-pane (find-pane-named *application-frame* 'properties)))
     (let ((object (pane-object properties-pane)))
       (declare (ignore object))
-      (let ((x (parse-number:parse-number (gadget-value (find-pane-named *application-frame* 'bezier-curve-x-pos))))
-            (y (parse-number:parse-number (gadget-value (find-pane-named *application-frame* 'bezier-curve-y-pos)))))
+      (let ((x (parse-number:parse-number
+                (gadget-value (find-pane-named *application-frame* 'x-pos))))
+            (y (parse-number:parse-number
+                (gadget-value (find-pane-named *application-frame* 'y-pos)))))
         (declare (ignore x y))
         ;; FIXME!!
         )))
@@ -430,13 +421,33 @@
     (setf (pane-needs-redisplay app-pane) t)
     (clim:redisplay-frame-pane *application-frame* app-pane)))
 
+(defmethod make-properties-pane ((curve paint-bezier-curve))
+  (multiple-value-bind (x y)
+      ;; FIXME
+      (values 0 0)
+    (make-pane
+     'properties-pane
+     :name 'properties
+     :object curve
+     :contents
+     (list
+      (labelling (:label "Bezier Point Properties")
+        (vertically ()
+          (horizontally ()
+            (labelling (:label "X Position")
+              (make-pane 'text-field
+                         :name 'x-pos
+                         :editable-p t
+                         :value (princ-to-string x)))
+            (labelling (:label "Y Position")
+              (make-pane 'text-field
+                         :name 'y-pos
+                         :editable-p t
+                         :value (princ-to-string y))))
+          (make-pane 'push-button
+                     :name 'bezier-point-update
+                     :label "Update (FIXME!)"
+                     :activate-callback 'bezier-point-update-callback
+                     :max-height 20)))))))
 
-(defmethod setup-properties-pane ((object paint-bezier-curve) frame)
-  (let ((panes (climi::frame-panes-for-layout frame)))
-    (let ((app-pane (find-pane-named frame 'app))
-          (properties-pane (cdr (find 'properties panes :key #'car))))
-      ;; FIXME!!
-      (setf (pane-object properties-pane) object)
-      (setf (pane-needs-redisplay app-pane) t)
-      (setf (frame-current-layout frame) 'bezier-curve)
-      (clim:redisplay-frame-pane frame app-pane)))) 
+ 

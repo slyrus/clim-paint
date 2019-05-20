@@ -230,10 +230,14 @@
   (declare (ignore button))
   (let ((properties-pane (find-pane-named *application-frame* 'properties)))
     (let ((object (pane-object properties-pane)))
-      (let ((x1 (parse-number:parse-number (gadget-value (find-pane-named *application-frame* 'line-x1-pos))))
-            (y1 (parse-number:parse-number (gadget-value (find-pane-named *application-frame* 'line-y1-pos))))
-            (x2 (parse-number:parse-number (gadget-value (find-pane-named *application-frame* 'line-x2-pos))))
-            (y2 (parse-number:parse-number (gadget-value (find-pane-named *application-frame* 'line-y2-pos)))))
+      (let ((x1 (parse-number:parse-number
+                 (gadget-value (find-pane 'x1-pos properties-pane))))
+            (y1 (parse-number:parse-number
+                 (gadget-value (find-pane 'y1-pos properties-pane))))
+            (x2 (parse-number:parse-number
+                 (gadget-value (find-pane 'x2-pos properties-pane))))
+            (y2 (parse-number:parse-number
+                 (gadget-value (find-pane 'y2-pos properties-pane)))))
         (let ((paint-point-1 (line-start-point object))
               (paint-point-2 (line-end-point object)))
           (setf (%point paint-point-1) (make-point x1 y1)
@@ -243,24 +247,31 @@
     (setf (pane-needs-redisplay app-pane) t)
     (clim:redisplay-frame-pane *application-frame* app-pane)))
 
+(defmethod make-properties-pane ((line paint-line))
+  (multiple-value-bind (x1 y1)
+      (line-start-point* line)
+    (multiple-value-bind (x2 y2)
+        (line-end-point* line)
+      (make-pane
+       'properties-pane
+       :name 'properties
+       :contents
+       (list
+        (labelling (:label "New Line Properties")
+          (vertically ()
+            (horizontally ()
+              (labelling (:label "X1 Position")
+                (make-pane 'text-field :name 'x1-pos :editable-p t :value (princ-to-string x1)))
+              (labelling (:label "Y1 Position")
+                (make-pane 'text-field :name 'y1-pos :editable-p t :value (princ-to-string y1))))
+            (horizontally ()
+              (labelling (:label "X2 Position")
+                (make-pane 'text-field :name 'x2-pos :editable-p t :value (princ-to-string x2)))
+              (labelling (:label "Y2 Position")
+                (make-pane 'text-field :name 'y2-pos :editable-p t :value (princ-to-string y2))))
+            (make-pane 'push-button
+                       :name 'line-update
+                       :label "Update"
+                       :activate-callback 'line-update-callback
+                       :max-height 20))))))))
 
-(defmethod setup-properties-pane ((object paint-line) frame)
-  (let ((panes (climi::frame-panes-for-layout frame)))
-    (let ((app-pane (find-pane-named frame 'app))
-          (properties-pane (cdr (find 'properties panes :key #'car)))
-          (x1-pos (cdr (find 'line-x1-pos panes :key #'car)))
-          (y1-pos (cdr (find 'line-y1-pos panes :key #'car)))
-          (x2-pos (cdr (find 'line-x2-pos panes :key #'car)))
-          (y2-pos (cdr (find 'line-y2-pos panes :key #'car))))
-      (multiple-value-bind (x1 y1)
-          (line-start-point* object)
-        (multiple-value-bind (x2 y2)
-            (line-end-point* object)
-          (setf (gadget-value x1-pos) (princ-to-string x1)
-                (gadget-value y1-pos) (princ-to-string y1)
-                (gadget-value x2-pos) (princ-to-string x2)
-                (gadget-value y2-pos) (princ-to-string y2))))
-      (setf (pane-object properties-pane) object)
-      (setf (pane-needs-redisplay app-pane) t)
-      (setf (frame-current-layout frame) 'line)
-      (clim:redisplay-frame-pane frame app-pane))))

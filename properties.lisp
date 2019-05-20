@@ -4,7 +4,7 @@
 ;;
 ;; properties-pane
 (defclass properties-pane (vbox-pane)
-  ((pane-object :initform nil :accessor pane-object)))
+  ((pane-object :initarg :object :initform nil :accessor pane-object)))
 
 ;;
 ;; properties-view
@@ -34,6 +34,9 @@
       (let ((client (gadget-client previous))
             (id (gadget-id previous)))
       (disarmed-callback previous client id)))))
+
+(defgeneric make-properties-pane (object)
+  (:method (object)))
 
 (defgeneric setup-properties-pane (object frame)
   (:method (object frame)))
