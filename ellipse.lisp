@@ -487,54 +487,33 @@
                                     :ink (or ink default-ink))))
       (push ellipse shapes))))
 
-(defmethod setup-properties-pane ((object paint-ellipse) frame)
-  (let ((panes (climi::frame-panes-for-layout frame))
-        (app-pane (find-pane-named frame 'app)))
-    (let ((properties-pane (cdr (find 'properties panes :key #'car)))
-          (center-x (cdr (find 'ellipse-center-x panes :key #'car)))
-          (center-y (cdr (find 'ellipse-center-y panes :key #'car)))
-          (radius-1-dx (cdr (find 'ellipse-radius-1-dx panes :key #'car)))
-          (radius-1-dy (cdr (find 'ellipse-radius-1-dy panes :key #'car)))
-          (radius-2-dx (cdr (find 'ellipse-radius-2-dx panes :key #'car)))
-          (radius-2-dy (cdr (find 'ellipse-radius-2-dy panes :key #'car)))
-          (start-angle (cdr (find 'ellipse-start-angle panes :key #'car)))
-          (end-angle (cdr (find 'ellipse-end-angle panes :key #'car))))
-      (multiple-value-bind (x y)
-          (point-position (center-point object))
-        (setf (gadget-value center-x) (princ-to-string x)
-              (gadget-value center-y) (princ-to-string y)))
-      (setf (gadget-value radius-1-dx) (princ-to-string (radius-1-dx object))
-            (gadget-value radius-1-dy) (princ-to-string (radius-1-dy object))
-            (gadget-value radius-2-dx) (princ-to-string (radius-2-dx object))
-            (gadget-value radius-2-dy) (princ-to-string (radius-2-dy object)))
-      (setf (gadget-value start-angle) (princ-to-string (start-angle object))
-            (gadget-value end-angle) (princ-to-string (end-angle object)))
-      (setf (pane-object properties-pane) object)
-      (setf (pane-needs-redisplay app-pane) t)
-      (setf (frame-current-layout frame) 'ellipse)
-      (clim:redisplay-frame-pane frame app-pane))))
-
 ;;;
 (defun ellipse-update-callback (button)
   (declare (ignore button))
   (let ((properties-pane (find-pane-named *application-frame* 'properties)))
     (let ((object (pane-object properties-pane)))
       (let ((x (parse-number:parse-number
-                (gadget-value (find-pane-named *application-frame* 'ellipse-center-x))))
+                (gadget-value (find-pane 'center-x properties-pane))))
             (y (parse-number:parse-number
-                (gadget-value (find-pane-named *application-frame* 'ellipse-center-y))))
-            (radius-1-dx (parse-number:parse-number
-                          (gadget-value (find-pane-named *application-frame* 'ellipse-radius-1-dx))))
-            (radius-1-dy (parse-number:parse-number
-                          (gadget-value (find-pane-named *application-frame* 'ellipse-radius-1-dy))))
-            (radius-2-dx (parse-number:parse-number
-                          (gadget-value (find-pane-named *application-frame* 'ellipse-radius-2-dx))))
-            (radius-2-dy (parse-number:parse-number
-                          (gadget-value (find-pane-named *application-frame* 'ellipse-radius-2-dy))))
-            (start-angle (parse-number:parse-number
-                          (gadget-value (find-pane-named *application-frame* 'ellipse-start-angle))))
-            (end-angle (parse-number:parse-number
-                        (gadget-value (find-pane-named *application-frame* 'ellipse-end-angle)))))
+                (gadget-value (find-pane 'center-y properties-pane))))
+            (radius-1-dx
+             (parse-number:parse-number
+              (gadget-value (find-pane 'radius-1-dx properties-pane))))
+            (radius-1-dy
+             (parse-number:parse-number
+              (gadget-value (find-pane 'radius-1-dy properties-pane))))
+            (radius-2-dx
+             (parse-number:parse-number
+              (gadget-value (find-pane 'radius-2-dx properties-pane))))
+            (radius-2-dy
+             (parse-number:parse-number
+              (gadget-value (find-pane 'radius-2-dy properties-pane))))
+            (start-angle
+             (parse-number:parse-number
+              (gadget-value (find-pane 'start-angle properties-pane))))
+            (end-angle
+             (parse-number:parse-number
+              (gadget-value (find-pane 'end-angle properties-pane)))))
         (setf (center-point object) (make-point x y)
               (radius-1-dx object) radius-1-dx
               (radius-1-dy object) radius-1-dy
@@ -547,40 +526,75 @@
     (setf (pane-needs-redisplay app-pane) t)
     (clim:redisplay-frame-pane *application-frame* app-pane)))
 
-;;;
-#+nil
-(defmethod display-properties ((object ellipse) pane)
-  (let (x-pos y-pos)
-    (multiple-value-bind (x y)
-        (point-position (center-point object))
-      (stream-set-cursor-position pane 10 10)
-      (stream-write-string pane "X pos:  ")
-      (surrounding-output-with-border (pane)
-        (setf x-pos
-              (with-output-as-gadget (pane)
-                (make-pane 'text-field :width 60 :value (princ-to-string x)))))
+(defmethod make-properties-pane ((ellipse paint-ellipse))
 
-      #+nil
-      (progn
-        (stream-set-cursor-position pane 10 50)
-        (stream-write-string pane "Y pos:  ")
-        (surrounding-output-with-border (pane)
-          (setf y-pos
-                (with-output-as-gadget (pane)
-                  (make-pane 'text-field :width 60 :value (princ-to-string y)))))
-        (setf (pane-needs-redisplay y-pos) t)))
-    (stream-set-cursor-position pane 50 250)
-    (with-output-as-gadget (pane)
-      (make-pane 'push-button
-                 :label "Update"
-                 :activate-callback (lambda (button)
-                                      (declare (ignore button))
-                                      (let ((x (parse-number:parse-number (gadget-value x-pos)))
-                                            (y 200
-                                             #+nil (parse-number:parse-number (gadget-value y-pos))))
-                                        (setf (center-point object)
-                                              (make-point x y)))
-                                      (let* ((frame *application-frame*)
-                                             (app-pane (find-pane-named frame 'app)))
-                                        (setf (pane-needs-redisplay app-pane) t)
-                                        (clim:redisplay-frame-pane *application-frame* app-pane)))))))
+  (with-accessors ((center-point center-point)
+                   (radius-1-dx radius-1-dx)
+                   (radius-1-dy radius-1-dy)
+                   (radius-2-dx radius-2-dx)
+                   (radius-2-dy radius-2-dy)
+                   (start-angle start-angle)
+                   (end-angle end-angle)
+                   (filledp filledp)
+                   (ink ink)
+                   (line-thickness line-thickness))
+      ellipse
+    (multiple-value-bind (x1 y1)
+        (point-position center-point)
+      (make-pane
+       'properties-pane
+       :name 'properties
+       :object ellipse
+       :contents
+       (list
+        (labelling (:label "Ellipse Properties")
+          (vertically ()
+            (horizontally ()
+              (labelling (:label "Center X")
+                (make-pane 'text-field
+                           :name 'center-x
+                           :editable-p t
+                           :value (princ-to-string x1)))
+              (labelling (:label "Center Y")
+                (make-pane 'text-field
+                           :name 'center-y
+                           :editable-p t
+                           :value (princ-to-string y1))))
+            (horizontally ()
+              (labelling (:label "Radius 1 DX")
+                (make-pane 'text-field
+                           :name 'radius-1-dx
+                           :editable-p t
+                           :value (princ-to-string radius-1-dx)))
+              (labelling (:label "Radius 1 DY")
+                (make-pane 'text-field
+                           :name 'radius-1-dy
+                           :editable-p t
+                           :value (princ-to-string radius-1-dy))))
+            (horizontally ()
+              (labelling (:label "Radius 2 DX")
+                (make-pane 'text-field
+                           :name 'radius-2-dx
+                           :editable-p t
+                           :value (princ-to-string radius-2-dx)))
+              (labelling (:label "Radius 2 DY")
+                (make-pane 'text-field
+                           :name 'radius-2-dy
+                           :editable-p t
+                           :value (princ-to-string radius-2-dy))))
+            (horizontally ()
+              (labelling (:label "Start Angle")
+                (make-pane 'text-field
+                           :name 'start-angle
+                           :editable-p t
+                           :value (princ-to-string start-angle)))
+              (labelling (:label "End Angle")
+                (make-pane 'text-field
+                           :name 'end-angle
+                           :editable-p t
+                           :value (princ-to-string end-angle))))
+            (make-pane 'push-button
+                       :name 'ellipse-update
+                       :label "Update"
+                       :activate-callback 'ellipse-update-callback
+                       :max-height 20))))))))

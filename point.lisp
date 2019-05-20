@@ -180,9 +180,9 @@
   (let ((properties-pane (find-pane-named *application-frame* 'properties)))
     (let ((object (pane-object properties-pane)))
       (let ((x (parse-number:parse-number
-                (gadget-value (find-pane-named *application-frame* 'x-pos))))
+                (gadget-value (find-pane 'x-pos properties-pane))))
             (y (parse-number:parse-number
-                (gadget-value (find-pane-named *application-frame* 'y-pos)))))
+                (gadget-value (find-pane 'y-pos properties-pane)))))
         (setf (%point object) (make-point x y)))))
   (let* ((frame *application-frame*)
          (app-pane (find-pane-named frame 'app)))
@@ -198,7 +198,7 @@
      :object point
      :contents
      (list
-      (labelling (:label "New Point Properties")
+      (labelling (:label "Point Properties")
         (vertically ()
           (horizontally ()
             (labelling (:label "X Position")

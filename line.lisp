@@ -257,7 +257,7 @@
        :name 'properties
        :contents
        (list
-        (labelling (:label "New Line Properties")
+        (labelling (:label "Line Properties")
           (vertically ()
             (horizontally ()
               (labelling (:label "X1 Position")

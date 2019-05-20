@@ -228,13 +228,13 @@
   (let ((properties-pane (find-pane-named *application-frame* 'properties)))
     (let ((object (pane-object properties-pane)))
       (let ((x1 (parse-number:parse-number
-                 (gadget-value (find-pane-named *application-frame* 'x1-pos))))
+                 (gadget-value (find-pane 'x1-pos properties-pane))))
             (y1 (parse-number:parse-number
-                 (gadget-value (find-pane-named *application-frame* 'y1-pos))))
+                 (gadget-value (find-pane 'y1-pos properties-pane))))
             (x2 (parse-number:parse-number
-                 (gadget-value (find-pane-named *application-frame* 'x2-pos))))
+                 (gadget-value (find-pane 'x2-pos properties-pane))))
             (y2 (parse-number:parse-number
-                 (gadget-value (find-pane-named *application-frame* 'y2-pos)))))
+                 (gadget-value (find-pane 'y2-pos properties-pane)))))
         (with-accessors ((point-1 %point-1)
                          (point-2 %point-2))
             object
