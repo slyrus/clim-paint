@@ -24,6 +24,12 @@ editing shapes via the CLIM interactor.
 
 ### Lines
 
+### Rectangles
+
+### Ellipses
+
+### Bezier Curves
+
 ## Presentations
 
 ### Types of Presentations

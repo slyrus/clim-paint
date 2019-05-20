@@ -402,8 +402,6 @@
                                  :line-thickness 4)))
       (push bezier-curve shapes))))
 
-;;;
-;;; bezier-curve-update-callback
 (defun bezier-point-update-callback (button)
   (declare (ignore button))
   (let ((properties-pane (find-pane-named *application-frame* 'properties)))
