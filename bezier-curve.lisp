@@ -102,6 +102,20 @@
                                    :filled filled)
                     'bezier-curve-point-on-curve
                     :single-box t)))))
+;;;
+;;; Need a special presentation-to-command-translator for
+;;; bezier-curve-segment here. For now we'll just call
+;;; com-move-and-select-object on the parent bezier curve. In theory
+;;; could do something more interesting here.
+(define-presentation-to-command-translator move-and-select-bezier-curve-segment-translator
+    (paint-bezier-curve-segment com-move-and-select-object clim-paint
+                  :gesture move-and-select-object-gesture
+                  :menu nil
+                  :tester ((object presentation event)
+                           (declare (ignore presentation event))
+                           (paint-object-p object)))
+    (object presentation)
+  (list (output-record-parent presentation)))
 
 ;;; com-delete-bezier-curve-point-on-curve
 (define-clim-paint-command (com-delete-bezier-curve-point-on-curve)
