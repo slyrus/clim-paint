@@ -146,8 +146,10 @@
            (append
             (when line-thickness `(:line-thickness ,line-thickness))))))
 
-(define-presentation-method present (bezier-curve-segment (type paint-bezier-curve-segment) pane
-                                                          (view clim-paint-view) &key)
+(define-presentation-method present (bezier-curve-segment
+                                     (type paint-bezier-curve-segment) pane
+                                     (view clim-paint-view)
+                                     &key)
   (draw-paint-bezier-curve-segment pane bezier-curve-segment))
 
 (defun make-bezier-curve-segments (bezier-curve)
