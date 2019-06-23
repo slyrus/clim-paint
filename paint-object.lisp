@@ -95,9 +95,12 @@
         (old-properties-pane
          (find-pane 'properties (frame-top-level-sheet frame))))
     (let ((properties-pane (make-properties-pane object)))
-      (setf (pane-object properties-pane) object)
-      (setf (pane-needs-redisplay app-pane) t)
-      (let ((parent (sheet-parent old-properties-pane)))
-        (sheet-disown-child parent old-properties-pane :errorp t)
-        (sheet-adopt-child parent properties-pane))
+      (if properties-pane
+          (progn
+            (setf (pane-object properties-pane) object)
+            (setf (pane-needs-redisplay app-pane) t)
+            (let ((parent (sheet-parent old-properties-pane)))
+              (sheet-disown-child parent old-properties-pane :errorp t)
+              (sheet-adopt-child parent properties-pane)))
+          (warn "No properties pane!"))
       (clim:redisplay-frame-pane frame app-pane))))
