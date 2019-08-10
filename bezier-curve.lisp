@@ -334,7 +334,7 @@
                     (pane :feedback
                           (lambda (record stream initial-x initial-y x y event)
                             (multiple-value-bind (record-x record-y)
-                          (output-record-position record)
+                                (output-record-position record)
                               (let ((dx (- record-x initial-x))
                                     (dy (- record-y initial-y)))
                                 (case event
@@ -349,10 +349,13 @@
                                                     :ink new-ink :filled t))
                                     record)
                                    (stream-add-output-record stream record)
-                                   (repaint-sheet stream +everywhere+))
+                                   ;; Question: why do I have to use
+                                   ;; +everywhere+ here? Can't I just redraw
+                                   ;; the damaged part?
+                                   (repaint-sheet stream (bounding-rectangle +everywhere+)))
                                   (:erase
                                    (clear-output-record record)
-                                   (repaint-sheet stream +everywhere+))))))
+                                   (repaint-sheet stream (bounding-rectangle record)))))))
                           :finish-on-release t))
               (let ((new-point (make-point x y)))
                 (let ((bezier-curve (presentation-object (output-record-parent presentation)))

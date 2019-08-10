@@ -35,10 +35,13 @@
                               (move-dragging object stream (- x startx) (- y starty))
                               record)
                              (stream-add-output-record stream record)
+                             ;; Question: why do I have to use
+                             ;; +everywhere+ here? Can't I just redraw
+                             ;; the damaged part?
                              (repaint-sheet stream +everywhere+))
                             (:erase
                              (clear-output-record record)
-                             (repaint-sheet stream +everywhere+))))))
+                             (repaint-sheet stream (bounding-rectangle record)))))))
                     :finish-on-release t))
         (move-update object (- x startx) (- y starty)))
       (setf (pane-needs-redisplay pane) t))
