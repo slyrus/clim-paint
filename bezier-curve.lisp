@@ -330,12 +330,30 @@
             (draw-circle pane nearest-point 6
                          :ink +yellow+ :filled t)
             (multiple-value-bind (x y)
-                (dragging-output*
-                    (pane :finish-on-release t)
-                  (lambda (stream x y)
-                    (with-output-to-output-record (stream)
-                      (draw-circle* stream x y 6
-                                    :ink new-ink :filled t))))
+                (dragging-output
+                    (pane :feedback
+                          (lambda (record stream initial-x initial-y x y event)
+                            (multiple-value-bind (record-x record-y)
+                          (output-record-position record)
+                              (let ((dx (- record-x initial-x))
+                                    (dy (- record-y initial-y)))
+                                (case event
+                                  (:draw
+                                   (when (output-record-parent record)
+                                     (delete-output-record record (output-record-parent record)))
+                                   (setf (output-record-position record)
+                                         (values (+ dx x) (+ dy y)))
+                                   (add-output-record
+                                    (with-output-to-output-record (stream)
+                                      (draw-circle* stream x y 6
+                                                    :ink new-ink :filled t))
+                                    record)
+                                   (stream-add-output-record stream record)
+                                   (repaint-sheet stream +everywhere+))
+                                  (:erase
+                                   (clear-output-record record)
+                                   (repaint-sheet stream +everywhere+))))))
+                          :finish-on-release t))
               (let ((new-point (make-point x y)))
                 (let ((bezier-curve (presentation-object (output-record-parent presentation)))
                       (index (segment-index bezier-curve-segment)))

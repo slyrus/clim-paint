@@ -18,10 +18,28 @@
     (multiple-value-bind (startx starty)
         (stream-pointer-position pane)
       (multiple-value-bind (x y)
-          (dragging-output*
-              (pane :finish-on-release t)
-            (lambda (stream x y)
-              (move-dragging object stream (- x startx) (- y starty))))
+          (dragging-output
+              (pane :feedback
+                    (lambda (record stream initial-x initial-y x y event)
+                      (multiple-value-bind (record-x record-y)
+                          (output-record-position record)
+                        (let ((dx (- record-x initial-x))
+                              (dy (- record-y initial-y)))
+                          (case event
+                            (:draw
+                             (when (output-record-parent record)
+                               (delete-output-record record (output-record-parent record)))
+                             (setf (output-record-position record)
+                                   (values (+ dx x) (+ dy y)))
+                             (add-output-record
+                              (move-dragging object stream (- x startx) (- y starty))
+                              record)
+                             (stream-add-output-record stream record)
+                             (repaint-sheet stream +everywhere+))
+                            (:erase
+                             (clear-output-record record)
+                             (repaint-sheet stream +everywhere+))))))
+                    :finish-on-release t))
         (move-update object (- x startx) (- y starty)))
       (setf (pane-needs-redisplay pane) t))
     (redisplay-frame-panes *application-frame*)))
