@@ -250,7 +250,11 @@
 (defmethod move-dragging ((bezier-curve paint-bezier-curve) stream dx dy)
   (with-output-to-output-record (stream)
     (with-translation (stream dx dy)
-      (draw-paint-bezier-curve stream bezier-curve))))
+      (with-accessors ((ink ink)
+                       (line-thickness line-thickness)
+                       (filled filledp))
+          bezier-curve
+        (draw-paint-bezier-curve stream bezier-curve :ink ink :line-thickness line-thickness)))))
 
 (defmethod move-update ((bezier-curve paint-bezier-curve) dx dy)
   (with-accessors ((ink ink)
