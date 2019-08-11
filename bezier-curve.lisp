@@ -243,6 +243,7 @@
       (:highlight
        (draw-paint-bezier-curve stream bezier-curve :ink *highlight-color*))
       (:unhighlight
+       #+nil
        (draw-paint-bezier-curve stream bezier-curve)))))
 
 ;;;

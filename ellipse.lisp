@@ -234,6 +234,7 @@
                             :ink *highlight-color*
                             :filled nil)))))
       (:unhighlight
+       #+nil
        (queue-repaint
         stream
         (make-instance
