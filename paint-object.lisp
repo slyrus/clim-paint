@@ -11,6 +11,18 @@
   (:documentation "Checking for class paint-object"))
 
 
+(defmacro dragging-output* ((&optional (stream '*standard-output*) &rest args
+                                       &key (repaint t) finish-on-release multiple-window feedback)
+                             &body body)
+  (declare (ignore repaint finish-on-release multiple-window feedback))
+  (setq stream (climi::stream-designator-symbol stream '*standard-output*))
+  (climi::with-gensyms (erase record)
+    `(let ((,record (with-output-to-output-record (,stream) ,@body)))
+       (flet ((,erase (record sheet)
+                ;; Default function would signal error.
+                (erase-output-record record sheet nil)))
+         (drag-output-record ,stream ,record :erase #',erase ,@args)))))
+
 ;;; moving objects
 (define-clim-paint-command (com-drag-move-object)
     ((object paint-object))
@@ -18,7 +30,7 @@
     (multiple-value-bind (startx starty)
         (stream-pointer-position pane)
       (multiple-value-bind (x y)
-          (dragging-output
+          (dragging-output*
               (pane :feedback
                     (lambda (record stream initial-x initial-y x y event)
                       (multiple-value-bind (record-x record-y)
